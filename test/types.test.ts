@@ -1,5 +1,52 @@
 import { describe, expect, test } from "bun:test";
+import { decode, decodeRequest, encode } from "../src/index.ts";
 import { findHandler, getHandler } from "../src/types.ts";
+
+type Assert<T extends true> = T;
+type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
+  ? true
+  : false;
+
+const encoded = encode({
+  createdAt: new Date("2024-01-01T00:00:00.000Z"),
+  active: true,
+});
+
+type EncodeReturnIsStable = Assert<Equal<typeof encoded, [string, string][]>>;
+
+const decoded = decode<{
+  createdAt: Date;
+  active: boolean;
+}>(encoded);
+
+type DecodeIsGeneric = Assert<
+  Equal<
+    typeof decoded,
+    {
+      createdAt: Date;
+      active: boolean;
+    }
+  >
+>;
+
+async function assertDecodeRequestGeneric(): Promise<void> {
+  const value = await decodeRequest<{
+    id: string;
+    count: number;
+  }>(new Request("https://example.com", { method: "POST", body: "id=abc\ncount=42" }));
+
+  type DecodeRequestIsGeneric = Assert<
+    Equal<
+      typeof value,
+      {
+        id: string;
+        count: number;
+      }
+    >
+  >;
+}
+
+void assertDecodeRequestGeneric;
 
 describe("type registry", () => {
   test("findHandler returns undefined for strings", () => {

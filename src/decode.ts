@@ -8,10 +8,10 @@ export interface DecodeOptions {
   typesKey?: string;
 }
 
-export function decode(
+export function decode<T = unknown>(
   data: FormData | Iterable<[string, FormDataEntryValue]>,
   options?: DecodeOptions,
-): unknown {
+): T {
   const typesKey = options?.typesKey ?? DEFAULT_TYPES_KEY;
   const raw: [string, string][] = [];
   let typesJson: string | undefined;
@@ -104,17 +104,20 @@ export function decode(
     }
   }
 
-  return result;
+  return result as T;
 }
 
-export async function decodeRequest(request: Request, options?: DecodeOptions): Promise<unknown> {
+export async function decodeRequest<T = unknown>(
+  request: Request,
+  options?: DecodeOptions,
+): Promise<T> {
   const contentType = request.headers.get("content-type") ?? "";
 
   if (
     contentType.includes("multipart/form-data") ||
     contentType.includes("application/x-www-form-urlencoded")
   ) {
-    return decode(await request.formData(), options);
+    return decode<T>(await request.formData(), options);
   }
 
   if (contentType.includes("text/plain")) {
@@ -127,10 +130,10 @@ export async function decodeRequest(request: Request, options?: DecodeOptions): 
         if (eq === -1) return [line, ""];
         return [line.slice(0, eq), line.slice(eq + 1)];
       });
-    return decode(entries, options);
+    return decode<T>(entries, options);
   }
 
-  return decode(await request.formData(), options);
+  return decode<T>(await request.formData(), options);
 }
 
 function convertStructural(root: unknown, path: string, typeId: string): void {

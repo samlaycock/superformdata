@@ -327,7 +327,7 @@ describe("encode/decode round-trip", () => {
   });
 
   test("decode with no entries returns empty object", () => {
-    expect(decode([])).toEqual({});
+    expect(decode<Record<string, never>>([])).toEqual({});
   });
 
   test("decode throws on malformed $types JSON", () => {
@@ -361,7 +361,7 @@ describe("encode/decode round-trip", () => {
       formData.append(key, value);
     }
 
-    expect(decode(formData)).toEqual(original);
+    expect(decode<typeof original>(formData)).toEqual(original);
   });
 
   test("custom typesKey", () => {
@@ -393,7 +393,7 @@ describe("decodeRequest", () => {
       body,
     });
 
-    expect(await decodeRequest(request)).toEqual(input);
+    expect(await decodeRequest<typeof input>(request)).toEqual(input);
   });
 
   test("multipart/form-data", async () => {
@@ -410,7 +410,7 @@ describe("decodeRequest", () => {
       body: formData,
     });
 
-    expect(await decodeRequest(request)).toEqual(input);
+    expect(await decodeRequest<typeof input>(request)).toEqual(input);
   });
 
   test("text/plain", async () => {
@@ -424,7 +424,7 @@ describe("decodeRequest", () => {
       body,
     });
 
-    expect(await decodeRequest(request)).toEqual(input);
+    expect(await decodeRequest<typeof input>(request)).toEqual(input);
   });
 
   test("with custom typesKey", async () => {
@@ -440,7 +440,7 @@ describe("decodeRequest", () => {
       body,
     });
 
-    expect(await decodeRequest(request, { typesKey: "__meta" })).toEqual(input);
+    expect(await decodeRequest<typeof input>(request, { typesKey: "__meta" })).toEqual(input);
   });
 
   test("text/plain with \\n line endings", async () => {
@@ -454,6 +454,6 @@ describe("decodeRequest", () => {
       body,
     });
 
-    expect(await decodeRequest(request)).toEqual(input);
+    expect(await decodeRequest<typeof input>(request)).toEqual(input);
   });
 });

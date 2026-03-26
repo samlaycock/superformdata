@@ -8,7 +8,7 @@ export interface EncodeOptions {
   types?: Record<string, string>;
 }
 
-export function encode(input: unknown, options?: EncodeOptions): [string, string][] {
+export function encode<T>(input: T, options?: EncodeOptions): [string, string][] {
   const typesKey = options?.typesKey ?? DEFAULT_TYPES_KEY;
 
   // HTMLFormElement

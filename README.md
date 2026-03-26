@@ -37,7 +37,7 @@ const input = {
 };
 
 const entries = encode(input);
-const value = decode(entries);
+const value = decode<typeof input>(entries);
 ```
 
 ## Decode a Request
@@ -46,7 +46,11 @@ const value = decode(entries);
 import { decodeRequest } from "superformdata";
 
 export async function POST(request: Request) {
-  const data = await decodeRequest(request);
+  const data = await decodeRequest<{
+    name: string;
+    count: number;
+    createdAt: Date;
+  }>(request);
   return Response.json(data);
 }
 ```
@@ -75,9 +79,9 @@ const entries = encode(form!);
 ## API
 
 ```ts
-encode(input: unknown, options?: { typesKey?: string; types?: Record<string, string> }): [string, string][]
-decode(data: FormData | Iterable<[string, FormDataEntryValue]>, options?: { typesKey?: string }): unknown
-decodeRequest(request: Request, options?: { typesKey?: string }): Promise<unknown>
+encode<T>(input: T, options?: { typesKey?: string; types?: Record<string, string> }): [string, string][]
+decode<T = unknown>(data: FormData | Iterable<[string, FormDataEntryValue]>, options?: { typesKey?: string }): T
+decodeRequest<T = unknown>(request: Request, options?: { typesKey?: string }): Promise<T>
 onChange(typeId: string, options?: { typesKey?: string }): (event: Event) => void
 ```
 
