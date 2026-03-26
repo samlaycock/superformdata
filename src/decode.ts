@@ -32,7 +32,7 @@ export function decode(
       types = JSON.parse(typesJson);
     } catch {
       throw new TypeError(
-        `Invalid superform metadata: "${typesKey}" field contains malformed JSON`,
+        `Invalid superformdata metadata: "${typesKey}" field contains malformed JSON`,
       );
     }
   }

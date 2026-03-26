@@ -1,13 +1,13 @@
-# superform
+# superformdata
 
 Serialize rich JavaScript values into form-style entries and decode them back again.
 
-`superform` is useful when you want to move data through `FormData`, URL-encoded forms, or request bodies without flattening everything to strings yourself.
+`superformdata` is useful when you want to move data through `FormData`, URL-encoded forms, or request bodies without flattening everything to strings yourself.
 
 ## Installation
 
 ```bash
-npm install superform
+npm install superformdata
 ```
 
 ## What It Handles
@@ -25,7 +25,7 @@ npm install superform
 ## Basic Usage
 
 ```ts
-import { decode, encode } from "superform";
+import { decode, encode } from "superformdata";
 
 const input = {
   user: {
@@ -43,7 +43,7 @@ const value = decode(entries);
 ## Decode a Request
 
 ```ts
-import { decodeRequest } from "superform";
+import { decodeRequest } from "superformdata";
 
 export async function POST(request: Request) {
   const data = await decodeRequest(request);
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
 Use the change handlers to annotate form inputs with type metadata before submit.
 
 ```ts
-import { onDateChange, onNumberChange } from "superform";
+import { onDateChange, onNumberChange } from "superformdata";
 
 document.querySelector('input[name="count"]')?.addEventListener("change", onNumberChange);
 
@@ -66,7 +66,7 @@ document.querySelector('input[name="createdAt"]')?.addEventListener("change", on
 Then pass the form to `encode()`:
 
 ```ts
-import { encode } from "superform";
+import { encode } from "superformdata";
 
 const form = document.querySelector("form");
 const entries = encode(form!);

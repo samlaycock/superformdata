@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "superform",
+      "name": "superformdata",
       "devDependencies": {
         "@happy-dom/global-registrator": "^20.8.8",
         "@types/bun": "latest",
@@ -12,8 +12,6 @@
         "oxlint": "^1.57.0",
         "oxlint-tsgolint": "^0.17.4",
         "tsdown": "^0.21.5",
-      },
-      "peerDependencies": {
         "typescript": "^5",
       },
     },
