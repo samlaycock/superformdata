@@ -157,6 +157,37 @@ const form = document.querySelector("form");
 const entries = encode(form!);
 ```
 
+## `data-sf-*` Attributes
+
+The package currently recognizes `data-sf-type`.
+
+- `data-sf-type` tells `encode(form)` which type handler to use for that field.
+- The helper functions like `onDateChange()` and `onNumberChange()` set `data-sf-type` for you.
+- You can also set it manually in your HTML if the type is already known.
+
+```html
+<form id="post-form">
+  <input name="publishedAt" value="2024-01-01T00:00:00.000Z" data-sf-type="Date" />
+  <input name="views" value="1200" data-sf-type="number" />
+  <input name="homepage" value="https://example.com" data-sf-type="URL" />
+</form>
+```
+
+```ts
+import { encode } from "superformdata";
+
+const form = document.querySelector<HTMLFormElement>("#post-form")!;
+const entries = encode(form);
+```
+
+For checkboxes, `data-sf-type="boolean"` has special handling: the field is always included and encoded as `"true"` or `"false"` based on `checked`.
+
+```html
+<input name="published" type="checkbox" data-sf-type="boolean" />
+```
+
+No other `data-sf-*` attributes are currently read by the package.
+
 ### `onChange()`
 
 Attach your own type id to an input.
