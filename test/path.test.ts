@@ -153,4 +153,23 @@ describe("unflatten", () => {
       ]),
     ).toEqual({ items: [{ name: "x" }, { name: "y" }] });
   });
+
+  test("repeated flat keys become arrays", () => {
+    expect(
+      unflatten([
+        ["tags", "a"],
+        ["tags", "b"],
+        ["tags", "c"],
+      ]),
+    ).toEqual({ tags: ["a", "b", "c"] });
+  });
+
+  test("repeated nested keys become arrays", () => {
+    expect(
+      unflatten([
+        ["user.tags", "a"],
+        ["user.tags", "b"],
+      ]),
+    ).toEqual({ user: { tags: ["a", "b"] } });
+  });
 });
