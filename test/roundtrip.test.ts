@@ -364,6 +364,18 @@ describe("encode/decode round-trip", () => {
     expect(decode<typeof original>(formData)).toEqual(original);
   });
 
+  test("decode preserves repeated field names from FormData", () => {
+    const formData = new FormData();
+    formData.append("tags", "a");
+    formData.append("tags", "b");
+
+    expect(
+      decode<{
+        tags: string[];
+      }>(formData),
+    ).toEqual({ tags: ["a", "b"] });
+  });
+
   test("decode preserves repeated field names as arrays", () => {
     expect(
       decode<{
