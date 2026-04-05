@@ -87,6 +87,16 @@ const value = decode<{
 }>(entries);
 ```
 
+When the same decoded field path appears more than once, `decode()` preserves every value by collecting them into an array in entry order.
+
+```ts
+decode([
+  ["tags", "a"],
+  ["tags", "b"],
+]);
+// => { tags: ["a", "b"] }
+```
+
 ## Decode a Request
 
 ```ts
