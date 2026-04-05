@@ -18,6 +18,26 @@ export function appendIndex(path: string, index: number): string {
 export type PathSegment = string | number;
 type PathContainer = Record<string | number, unknown>;
 
+function assignPathValue(
+  container: PathContainer,
+  segment: PathSegment,
+  value: unknown,
+): void {
+  const existing = container[segment];
+
+  if (existing === undefined) {
+    container[segment] = value;
+    return;
+  }
+
+  if (Array.isArray(existing)) {
+    existing.push(value);
+    return;
+  }
+
+  container[segment] = [existing, value];
+}
+
 export function parsePath(path: string): PathSegment[] {
   if (path === "") return [];
 
@@ -88,7 +108,7 @@ export function unflatten(entries: [string, unknown][]): unknown {
     }
 
     const lastSeg = segments[segments.length - 1]!;
-    current[lastSeg] = value;
+    assignPathValue(current, lastSeg, value);
   }
 
   return root;

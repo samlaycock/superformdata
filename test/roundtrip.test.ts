@@ -364,6 +364,46 @@ describe("encode/decode round-trip", () => {
     expect(decode<typeof original>(formData)).toEqual(original);
   });
 
+  test("decode preserves repeated field names from FormData", () => {
+    const formData = new FormData();
+    formData.append("tags", "a");
+    formData.append("tags", "b");
+
+    expect(
+      decode<{
+        tags: string[];
+      }>(formData),
+    ).toEqual({ tags: ["a", "b"] });
+  });
+
+  test("decode preserves repeated field names as arrays", () => {
+    expect(
+      decode<{
+        tags: string[];
+      }>([
+        ["tags", "a"],
+        ["tags", "b"],
+      ]),
+    ).toEqual({ tags: ["a", "b"] });
+  });
+
+  test("decode preserves repeated typed field names as arrays", () => {
+    expect(
+      decode<{
+        createdAt: Date[];
+      }>([
+        ["createdAt", "2024-01-01T00:00:00.000Z"],
+        ["createdAt", "2024-06-01T00:00:00.000Z"],
+        ["$types", JSON.stringify({ createdAt: "Date" })],
+      ]),
+    ).toEqual({
+      createdAt: [
+        new Date("2024-01-01T00:00:00.000Z"),
+        new Date("2024-06-01T00:00:00.000Z"),
+      ],
+    });
+  });
+
   test("custom typesKey", () => {
     const input = { count: 42, $types: "user data here" };
     const entries = encode(input, { typesKey: "__meta" });
