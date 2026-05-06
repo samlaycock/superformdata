@@ -339,17 +339,14 @@ describe("encode/decode round-trip", () => {
     ).toThrow("malformed JSON");
   });
 
-  test("decode ignores File entries in FormData", () => {
+  test("decode throws on File entries in FormData", () => {
     const formData = new FormData();
     formData.append("name", "Alice");
     formData.append("file", new File(["content"], "test.txt"));
     formData.append("age", "30");
     formData.append("$types", JSON.stringify({ age: "number" }));
 
-    const result = decode(formData) as Record<string, unknown>;
-    expect(result.name).toBe("Alice");
-    expect(result.age).toBe(30);
-    expect(result).not.toHaveProperty("file");
+    expect(() => decode(formData)).toThrow(/File entries are not supported/);
   });
 
   test("decode from FormData", () => {

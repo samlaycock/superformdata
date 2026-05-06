@@ -17,8 +17,11 @@ export function decode<T = unknown>(
   let typesJson: string | undefined;
 
   for (const [key, value] of data) {
-    // Skip File entries
-    if (typeof value !== "string") continue;
+    if (typeof value !== "string") {
+      throw new TypeError(
+        `File entries are not supported by superformdata (field: "${key}"). Handle file uploads separately.`,
+      );
+    }
     if (key === typesKey) {
       typesJson = value;
     } else {
