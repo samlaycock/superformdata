@@ -490,8 +490,18 @@ describe("decodeRequest", () => {
       body: JSON.stringify({ a: 1 }),
     });
 
-    await expect(decodeRequest(request)).rejects.toThrow(TypeError);
-    await expect(decodeRequest(request.clone())).rejects.toThrow(
+    await expect(decodeRequest(request)).rejects.toThrow(
+      /Unsupported content-type/,
+    );
+  });
+
+  test("throws when content-type header is absent", async () => {
+    const request = new Request("http://localhost", {
+      method: "POST",
+      body: "name=Alice",
+    });
+
+    await expect(decodeRequest(request)).rejects.toThrow(
       /Unsupported content-type/,
     );
   });
