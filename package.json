@@ -38,6 +38,7 @@
     "ci:publish": "bun run check && changeset publish"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.31.0",
     "@happy-dom/global-registrator": "^20.8.8",
     "@types/bun": "latest",
     "happy-dom": "^20.8.8",
