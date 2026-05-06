@@ -38,7 +38,7 @@ export function encode<T>(input: T, options?: EncodeOptions): [string, string][]
 
 function isSubmitButton(el: Element): boolean {
   if (el instanceof HTMLButtonElement) {
-    return el.type === "submit" || el.type === "";
+    return el.type === "submit";
   }
   if (el instanceof HTMLInputElement) {
     return el.type === "submit" || el.type === "image";
