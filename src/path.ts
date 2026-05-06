@@ -18,11 +18,7 @@ export function appendIndex(path: string, index: number): string {
 export type PathSegment = string | number;
 type PathContainer = Record<string | number, unknown>;
 
-function assignPathValue(
-  container: PathContainer,
-  segment: PathSegment,
-  value: unknown,
-): void {
+function assignPathValue(container: PathContainer, segment: PathSegment, value: unknown): void {
   const existing = container[segment];
 
   if (existing === undefined) {
