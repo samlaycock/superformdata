@@ -6,6 +6,7 @@ export const DEFAULT_TYPES_KEY = "$types";
 export interface EncodeOptions {
   typesKey?: string;
   types?: Record<string, string>;
+  submitter?: HTMLElement | null;
 }
 
 export function encode<T>(input: T, options?: EncodeOptions): [string, string][] {
@@ -13,7 +14,7 @@ export function encode<T>(input: T, options?: EncodeOptions): [string, string][]
 
   // HTMLFormElement
   if (typeof HTMLFormElement !== "undefined" && input instanceof HTMLFormElement) {
-    return encodeForm(input, typesKey, options?.types);
+    return encodeForm(input, typesKey, options?.types, options?.submitter);
   }
 
   // FormData
@@ -35,10 +36,21 @@ export function encode<T>(input: T, options?: EncodeOptions): [string, string][]
   return entries;
 }
 
+function isSubmitButton(el: Element): boolean {
+  if (el instanceof HTMLButtonElement) {
+    return el.type === "submit" || el.type === "";
+  }
+  if (el instanceof HTMLInputElement) {
+    return el.type === "submit" || el.type === "image";
+  }
+  return false;
+}
+
 function encodeForm(
   form: HTMLFormElement,
   typesKey: string,
   explicitTypes?: Record<string, string>,
+  submitter?: HTMLElement | null,
 ): [string, string][] {
   const entries: [string, string][] = [];
   const types: Record<string, string> = { ...explicitTypes };
@@ -47,6 +59,22 @@ function encodeForm(
     const el = element as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
     if (!el.name || el.disabled) continue;
     if (el.name === typesKey) continue;
+
+    // Buttons are only successful controls when they are the submitter
+    if (el instanceof HTMLButtonElement) {
+      if (isSubmitButton(el) && el === submitter) {
+        entries.push([el.name, el.value]);
+      }
+      continue;
+    }
+
+    // input[type=submit] and input[type=image] follow the same rule
+    if (el instanceof HTMLInputElement && (el.type === "submit" || el.type === "image")) {
+      if (el === submitter) {
+        entries.push([el.name, el.value]);
+      }
+      continue;
+    }
 
     const typeId = (el as HTMLInputElement).dataset?.sfType ?? types[el.name];
 
