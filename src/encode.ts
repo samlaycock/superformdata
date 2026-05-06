@@ -115,8 +115,11 @@ function encodeForm(
       continue;
     }
 
-    // Skip file inputs
-    if (input.type === "file") continue;
+    if (input.type === "file") {
+      throw new TypeError(
+        `File inputs are not supported by superformdata (field: "${input.name}"). Handle file uploads separately.`,
+      );
+    }
 
     entries.push([el.name, input.value]);
     if (typeId) types[el.name] = typeId;
@@ -138,7 +141,11 @@ function encodeFormData(
   let existingTypes: Record<string, string> | undefined;
 
   for (const [key, value] of data) {
-    if (typeof value !== "string") continue;
+    if (typeof value !== "string") {
+      throw new TypeError(
+        `File entries are not supported by superformdata (field: "${key}"). Handle file uploads separately.`,
+      );
+    }
     if (key === typesKey) {
       try {
         existingTypes = JSON.parse(value);

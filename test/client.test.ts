@@ -200,11 +200,10 @@ describe("encode(form)", () => {
     expect(entries).toEqual([["color", "blue"]]);
   });
 
-  test("skips file inputs", () => {
+  test("throws on file inputs", () => {
     const form = createForm('<input name="name" value="Alice" /><input name="file" type="file" />');
-    const entries = encode(form);
 
-    expect(entries).toEqual([["name", "Alice"]]);
+    expect(() => encode(form)).toThrow(/File inputs are not supported/);
   });
 
   test("encodes with custom typesKey", () => {
@@ -367,13 +366,11 @@ describe("encode(FormData)", () => {
     expect(result.count).toBe(42);
   });
 
-  test("skips File entries", () => {
+  test("throws on File entries", () => {
     const fd = new FormData();
     fd.append("name", "Alice");
     fd.append("file", new File(["content"], "test.txt"));
 
-    const entries = encode(fd);
-
-    expect(entries).toEqual([["name", "Alice"]]);
+    expect(() => encode(fd)).toThrow(/File entries are not supported/);
   });
 });
