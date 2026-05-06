@@ -483,6 +483,19 @@ describe("decodeRequest", () => {
     expect(await decodeRequest<typeof input>(request, { typesKey: "__meta" })).toEqual(input);
   });
 
+  test("throws on unsupported content-type", async () => {
+    const request = new Request("http://localhost", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ a: 1 }),
+    });
+
+    await expect(decodeRequest(request)).rejects.toThrow(TypeError);
+    await expect(decodeRequest(request.clone())).rejects.toThrow(
+      /Unsupported content-type/,
+    );
+  });
+
   test("text/plain with \\n line endings", async () => {
     const input = { name: "Alice", count: 42 };
     const entries = encode(input);
