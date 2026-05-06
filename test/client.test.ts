@@ -215,6 +215,56 @@ describe("encode(form)", () => {
     expect(entries.find(([k]) => k === "$types")).toBeUndefined();
   });
 
+  test("excludes button elements by default (no submitter)", () => {
+    const form = createForm(
+      '<input name="title" value="hello" /><button name="action" value="save">Save</button>',
+    );
+    const entries = encode(form);
+
+    expect(entries).toEqual([["title", "hello"]]);
+  });
+
+  test("includes button when passed as submitter", () => {
+    const form = createForm(
+      '<input name="title" value="hello" /><button name="action" value="save">Save</button>',
+    );
+    const button = form.querySelector<HTMLButtonElement>("button")!;
+    const entries = encode(form, { submitter: button });
+
+    expect(entries).toContainEqual(["title", "hello"]);
+    expect(entries).toContainEqual(["action", "save"]);
+  });
+
+  test("always excludes button[type=button]", () => {
+    const form = createForm(
+      '<input name="title" value="hello" /><button name="action" type="button" value="click">Click</button>',
+    );
+    const button = form.querySelector<HTMLButtonElement>("button")!;
+    const entries = encode(form, { submitter: button });
+
+    expect(entries).toEqual([["title", "hello"]]);
+  });
+
+  test("excludes input[type=submit] without submitter", () => {
+    const form = createForm(
+      '<input name="title" value="hello" /><input name="sub" type="submit" value="Send" />',
+    );
+    const entries = encode(form);
+
+    expect(entries).toEqual([["title", "hello"]]);
+  });
+
+  test("includes input[type=submit] when passed as submitter", () => {
+    const form = createForm(
+      '<input name="title" value="hello" /><input name="sub" type="submit" value="Send" />',
+    );
+    const submitInput = form.querySelector<HTMLInputElement>('input[type="submit"]')!;
+    const entries = encode(form, { submitter: submitInput });
+
+    expect(entries).toContainEqual(["title", "hello"]);
+    expect(entries).toContainEqual(["sub", "Send"]);
+  });
+
   test("encode(form) round-trips through decode", () => {
     const form = createForm(
       '<input name="name" value="Alice" />' +
