@@ -133,7 +133,9 @@ export async function decodeRequest<T = unknown>(
     return decode<T>(entries, options);
   }
 
-  return decode<T>(await request.formData(), options);
+  throw new TypeError(
+    `Unsupported content-type: "${contentType}". decodeRequest() only supports multipart/form-data, application/x-www-form-urlencoded, and text/plain.`,
+  );
 }
 
 function convertStructural(root: unknown, path: string, typeId: string): void {
