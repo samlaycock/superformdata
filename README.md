@@ -75,7 +75,7 @@ const entries = [
   ["user.name", "Alice"],
   ["user.joinedAt", "2024-01-01T00:00:00.000Z"],
   ["active", "true"],
-  ["$types", "{\"user.joinedAt\":\"Date\",\"active\":\"boolean\"}"],
+  ["$types", '{"user.joinedAt":"Date","active":"boolean"}'],
 ] satisfies [string, string][];
 
 const value = decode<{
@@ -153,9 +153,7 @@ document.querySelector('input[name="accountId"]')?.addEventListener("change", on
 document.querySelector('input[name="website"]')?.addEventListener("change", onURLChange);
 
 // Use onChange() when you want to set the type id yourself.
-document
-  .querySelector('input[name="pattern"]')
-  ?.addEventListener("change", onChange("RegExp"));
+document.querySelector('input[name="pattern"]')?.addEventListener("change", onChange("RegExp"));
 ```
 
 Then pass the form to `encode()`:
@@ -214,9 +212,7 @@ patternInput.addEventListener("change", onChange("RegExp"));
 ```ts
 import { onDateChange } from "superformdata";
 
-document
-  .querySelector('input[name="publishedAt"]')
-  ?.addEventListener("change", onDateChange);
+document.querySelector('input[name="publishedAt"]')?.addEventListener("change", onDateChange);
 ```
 
 ### `onNumberChange()`
@@ -232,9 +228,7 @@ document.querySelector('input[name="price"]')?.addEventListener("change", onNumb
 ```ts
 import { onBooleanChange } from "superformdata";
 
-document
-  .querySelector('input[name="completed"]')
-  ?.addEventListener("change", onBooleanChange);
+document.querySelector('input[name="completed"]')?.addEventListener("change", onBooleanChange);
 ```
 
 ### `onBigIntChange()`
@@ -242,9 +236,7 @@ document
 ```ts
 import { onBigIntChange } from "superformdata";
 
-document
-  .querySelector('input[name="orderId"]')
-  ?.addEventListener("change", onBigIntChange);
+document.querySelector('input[name="orderId"]')?.addEventListener("change", onBigIntChange);
 ```
 
 ### `onURLChange()`

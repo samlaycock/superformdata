@@ -397,10 +397,7 @@ describe("encode/decode round-trip", () => {
         ["$types", JSON.stringify({ createdAt: "Date" })],
       ]),
     ).toEqual({
-      createdAt: [
-        new Date("2024-01-01T00:00:00.000Z"),
-        new Date("2024-06-01T00:00:00.000Z"),
-      ],
+      createdAt: [new Date("2024-01-01T00:00:00.000Z"), new Date("2024-06-01T00:00:00.000Z")],
     });
   });
 
@@ -490,9 +487,7 @@ describe("decodeRequest", () => {
       body: JSON.stringify({ a: 1 }),
     });
 
-    await expect(decodeRequest(request)).rejects.toThrow(
-      /Unsupported content-type/,
-    );
+    await expect(decodeRequest(request)).rejects.toThrow(/Unsupported content-type/);
   });
 
   test("throws when content-type header is absent", async () => {
@@ -501,9 +496,7 @@ describe("decodeRequest", () => {
       body: "name=Alice",
     });
 
-    await expect(decodeRequest(request)).rejects.toThrow(
-      /Unsupported content-type/,
-    );
+    await expect(decodeRequest(request)).rejects.toThrow(/Unsupported content-type/);
   });
 
   test("text/plain with \\n line endings", async () => {
