@@ -6,6 +6,16 @@ export const DEFAULT_TYPES_KEY = "$types";
 export interface EncodeOptions {
   typesKey?: string;
   types?: Record<string, string>;
+  /**
+   * The element used to submit the form, mirroring `new FormData(form, submitter)`.
+   * Only submit buttons (`<button>`, `input[type=submit]`) that equal this element
+   * are included in the encoded output.
+   *
+   * Note: `input[type=image]` is recognised as a submit button and included when it
+   * equals the submitter, but the encoded value is `[name, value]` rather than the
+   * `[name.x, clickX]` / `[name.y, clickY]` pairs a real browser submission produces,
+   * because the originating click coordinates are not available here.
+   */
   submitter?: HTMLElement | null;
 }
 
@@ -69,7 +79,7 @@ function encodeForm(
     }
 
     // input[type=submit] and input[type=image] follow the same rule
-    if (el instanceof HTMLInputElement && (el.type === "submit" || el.type === "image")) {
+    if (el instanceof HTMLInputElement && isSubmitButton(el)) {
       if (el === submitter) {
         entries.push([el.name, el.value]);
       }

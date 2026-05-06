@@ -265,6 +265,26 @@ describe("encode(form)", () => {
     expect(entries).toContainEqual(["sub", "Send"]);
   });
 
+  test("includes input[type=image] when passed as submitter (encodes name+value, not coordinates)", () => {
+    const form = createForm(
+      '<input name="title" value="hello" /><input name="img" type="image" value="go" />',
+    );
+    const imageInput = form.querySelector<HTMLInputElement>('input[type="image"]')!;
+    const entries = encode(form, { submitter: imageInput });
+
+    expect(entries).toContainEqual(["title", "hello"]);
+    expect(entries).toContainEqual(["img", "go"]);
+  });
+
+  test("excludes input[type=image] without submitter", () => {
+    const form = createForm(
+      '<input name="title" value="hello" /><input name="img" type="image" value="go" />',
+    );
+    const entries = encode(form);
+
+    expect(entries).toEqual([["title", "hello"]]);
+  });
+
   test("encode(form) round-trips through decode", () => {
     const form = createForm(
       '<input name="name" value="Alice" />' +
