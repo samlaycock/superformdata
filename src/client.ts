@@ -25,11 +25,11 @@ function updateFormTypes(
   const input =
     existingInput ??
     (() => {
-      const input = document.createElement("input");
-      input.type = "hidden";
-      input.name = typesKey;
-      form.appendChild(input);
-      return input;
+      const newInput = document.createElement("input");
+      newInput.type = "hidden";
+      newInput.name = typesKey;
+      form.appendChild(newInput);
+      return newInput;
     })();
 
   const types: Record<string, string> = input.value ? JSON.parse(input.value) : {};
