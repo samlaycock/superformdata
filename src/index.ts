@@ -12,3 +12,4 @@ export {
 export type { ChangeHandlerOptions, ChangeHandlers } from "./client.ts";
 export type { EncodeOptions } from "./encode.ts";
 export type { DecodeOptions } from "./decode.ts";
+export type { TypeHandler, TypeHandlerList } from "./types.ts";

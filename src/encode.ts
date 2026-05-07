@@ -1,11 +1,12 @@
 import { appendIndex, appendKey } from "./path.ts";
-import { findHandler } from "./types.ts";
+import { createTypeRegistry, findHandler, type TypeHandlerList } from "./types.ts";
 
 export const DEFAULT_TYPES_KEY = "$types";
 
 export interface EncodeOptions {
   typesKey?: string;
   types?: Record<string, string>;
+  typeHandlers?: TypeHandlerList;
   /**
    * The element used to submit the form, mirroring `new FormData(form, submitter)`.
    * Only submit buttons (`<button>`, `input[type=submit]`) that equal this element
@@ -36,8 +37,9 @@ export function encode<T>(input: T, options?: EncodeOptions): [string, string][]
   const entries: [string, string][] = [];
   const types: Record<string, string> = {};
   const seen = new Set<unknown>();
+  const handlers = createTypeRegistry(options?.typeHandlers);
 
-  walk(input, "", entries, types, seen);
+  walk(input, "", entries, types, seen, handlers);
 
   if (Object.keys(types).length > 0) {
     entries.push([typesKey, JSON.stringify(types)]);
@@ -185,13 +187,14 @@ function walk(
   entries: [string, string][],
   types: Record<string, string>,
   seen: Set<unknown>,
+  handlers: ReturnType<typeof createTypeRegistry>,
 ): void {
   if (value instanceof Set) {
     trackRef(value, path, seen);
     types[path] = "set";
     let i = 0;
     for (const item of value) {
-      walk(item, appendIndex(path, i), entries, types, seen);
+      walk(item, appendIndex(path, i), entries, types, seen, handlers);
       i++;
     }
     seen.delete(value);
@@ -203,8 +206,8 @@ function walk(
     types[path] = "map";
     let i = 0;
     for (const [k, v] of value) {
-      walk(k, appendIndex(appendIndex(path, i), 0), entries, types, seen);
-      walk(v, appendIndex(appendIndex(path, i), 1), entries, types, seen);
+      walk(k, appendIndex(appendIndex(path, i), 0), entries, types, seen, handlers);
+      walk(v, appendIndex(appendIndex(path, i), 1), entries, types, seen, handlers);
       i++;
     }
     seen.delete(value);
@@ -219,9 +222,16 @@ function walk(
       return;
     }
     for (let i = 0; i < value.length; i++) {
-      walk(value[i], appendIndex(path, i), entries, types, seen);
+      walk(value[i], appendIndex(path, i), entries, types, seen, handlers);
     }
     seen.delete(value);
+    return;
+  }
+
+  const handler = findHandler(value, handlers);
+  if (handler) {
+    entries.push([path, handler.serialize(value)]);
+    types[path] = handler.id;
     return;
   }
 
@@ -234,18 +244,14 @@ function walk(
       return;
     }
     for (const key of keys) {
-      walk(value[key], appendKey(path, key), entries, types, seen);
+      walk(value[key], appendKey(path, key), entries, types, seen, handlers);
     }
     seen.delete(value);
     return;
   }
 
   // Leaf value
-  const handler = findHandler(value);
-  if (handler) {
-    entries.push([path, handler.serialize(value)]);
-    types[path] = handler.id;
-  } else if (typeof value === "string") {
+  if (typeof value === "string") {
     entries.push([path, value]);
   } else {
     const type = typeof value === "object" ? (value as object).constructor.name : typeof value;
