@@ -1,11 +1,12 @@
 import { DEFAULT_TYPES_KEY } from "./encode.ts";
 import { appendIndex, appendKey, parsePath, unflatten } from "./path.ts";
-import { getHandler } from "./types.ts";
+import { createTypeRegistry, getHandler, type TypeHandlerList } from "./types.ts";
 
 const STRUCTURAL_TYPES = new Set(["set", "map", "array", "object"]);
 
 export interface DecodeOptions {
   typesKey?: string;
+  typeHandlers?: TypeHandlerList;
 }
 
 export function decode<T = unknown>(
@@ -15,6 +16,7 @@ export function decode<T = unknown>(
   const typesKey = options?.typesKey ?? DEFAULT_TYPES_KEY;
   const raw: [string, string][] = [];
   let typesJson: string | undefined;
+  const handlers = createTypeRegistry(options?.typeHandlers);
 
   for (const [key, value] of data) {
     if (typeof value !== "string") {
@@ -53,7 +55,7 @@ export function decode<T = unknown>(
   for (const [path, value] of raw) {
     const typeId = types[path];
     if (typeId && !STRUCTURAL_TYPES.has(typeId)) {
-      const handler = getHandler(typeId);
+      const handler = getHandler(typeId, handlers);
       if (handler) {
         try {
           deserialized.push([path, handler.deserialize(value)]);

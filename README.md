@@ -112,6 +112,34 @@ export async function POST(request: Request) {
 }
 ```
 
+## Custom Type Handlers
+
+Pass custom handlers to `encode()` and `decode()` when you need to round-trip domain-specific values.
+
+```ts
+import { decode, encode, type TypeHandler } from "superformdata";
+
+interface Money {
+  readonly cents: number;
+}
+
+const moneyHandler: TypeHandler<Money> = {
+  id: "Money",
+  test: (value): value is Money =>
+    typeof value === "object" &&
+    value !== null &&
+    "cents" in value &&
+    typeof value.cents === "number",
+  serialize: (value) => String(value.cents),
+  deserialize: (raw) => ({ cents: Number(raw) }),
+};
+
+const entries = encode({ price: { cents: 1299 } }, { typeHandlers: [moneyHandler] });
+const value = decode<{ price: Money }>(entries, { typeHandlers: [moneyHandler] });
+```
+
+Custom handler IDs must be unique and cannot use built-in or structural IDs such as `number`, `Date`, `set`, or `map`.
+
 ## `decodeRequest()`
 
 Decode a `Request` body directly.
@@ -250,9 +278,9 @@ document.querySelector('input[name="homepage"]')?.addEventListener("change", onU
 ## API
 
 ```ts
-encode<T>(input: T, options?: { typesKey?: string; types?: Record<string, string> }): [string, string][]
-decode<T = unknown>(data: FormData | Iterable<[string, FormDataEntryValue]>, options?: { typesKey?: string }): T
-decodeRequest<T = unknown>(request: Request, options?: { typesKey?: string }): Promise<T>
+encode<T>(input: T, options?: { typesKey?: string; types?: Record<string, string>; typeHandlers?: readonly TypeHandler[] }): [string, string][]
+decode<T = unknown>(data: FormData | Iterable<[string, FormDataEntryValue]>, options?: { typesKey?: string; typeHandlers?: readonly TypeHandler[] }): T
+decodeRequest<T = unknown>(request: Request, options?: { typesKey?: string; typeHandlers?: readonly TypeHandler[] }): Promise<T>
 onChange(typeId: string, options?: { typesKey?: string }): (event: Event) => void
 ```
 

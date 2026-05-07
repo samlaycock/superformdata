@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { decode, decodeRequest, encode } from "../src/index.ts";
+import { decode, decodeRequest, encode, type TypeHandler } from "../src/index.ts";
 import { findHandler, getHandler } from "../src/types.ts";
 
 type Assert<T extends true> = T;
@@ -46,6 +46,21 @@ async function assertDecodeRequestGeneric(): Promise<void> {
 }
 
 void assertDecodeRequestGeneric;
+
+interface Money {
+  readonly cents: number;
+}
+
+const moneyHandler: TypeHandler<Money> = {
+  id: "Money",
+  test: (value): value is Money =>
+    typeof value === "object" &&
+    value !== null &&
+    "cents" in value &&
+    typeof value.cents === "number",
+  serialize: (value) => String(value.cents),
+  deserialize: (raw) => ({ cents: Number(raw) }),
+};
 
 describe("type registry", () => {
   test("findHandler returns undefined for strings", () => {
@@ -167,5 +182,52 @@ describe("type registry", () => {
         ["$types", JSON.stringify({ [path]: typeId })],
       ]),
     ).toThrow(message);
+  });
+
+  test("custom type handlers round-trip domain values per call", () => {
+    const encoded = encode({ price: { cents: 1234 } }, { typeHandlers: [moneyHandler] });
+
+    expect(encoded).toEqual([
+      ["price", "1234"],
+      ["$types", JSON.stringify({ price: "Money" })],
+    ]);
+    expect(decode<{ price: Money }>(encoded, { typeHandlers: [moneyHandler] })).toEqual({
+      price: { cents: 1234 },
+    });
+  });
+
+  test("custom type handlers decode explicitly typed entries", () => {
+    expect(
+      decode<{ price: Money }>(
+        [
+          ["price", "500"],
+          ["$types", JSON.stringify({ price: "Money" })],
+        ],
+        { typeHandlers: [moneyHandler] },
+      ),
+    ).toEqual({ price: { cents: 500 } });
+  });
+
+  test("custom type handler ids cannot collide with built-in or structural ids", () => {
+    expect(() => encode(1, { typeHandlers: [{ ...moneyHandler, id: "number" }] })).toThrow(
+      'Custom type handler id "number" is reserved',
+    );
+    expect(() => encode(1, { typeHandlers: [{ ...moneyHandler, id: "map" }] })).toThrow(
+      'Custom type handler id "map" is reserved',
+    );
+  });
+
+  test("custom type handler ids must be unique and non-empty", () => {
+    expect(() => encode(1, { typeHandlers: [{ ...moneyHandler, id: "" }] })).toThrow(
+      "Custom type handler id must not be empty",
+    );
+    expect(() =>
+      encode(1, {
+        typeHandlers: [
+          { ...moneyHandler, id: "Money" },
+          { ...moneyHandler, id: "Money" },
+        ],
+      }),
+    ).toThrow('Duplicate custom type handler id "Money"');
   });
 });
