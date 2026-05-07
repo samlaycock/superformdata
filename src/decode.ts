@@ -117,11 +117,13 @@ function buildParentPathSet(paths: Set<string>): Set<string> {
 
     parentPaths.add("");
 
-    for (let i = 1; i < segments.length; i++) {
-      const parentPath = segments.slice(0, i).reduce<string>((current, segment) => {
-        if (typeof segment === "number") return appendIndex(current, segment);
-        return appendKey(current, segment);
-      }, "");
+    let parentPath = "";
+    for (let i = 0; i < segments.length - 1; i++) {
+      const segment = segments[i]!;
+      parentPath =
+        typeof segment === "number"
+          ? appendIndex(parentPath, segment)
+          : appendKey(parentPath, segment);
       parentPaths.add(parentPath);
     }
   }
