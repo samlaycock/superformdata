@@ -77,6 +77,30 @@ describe("onChange handlers", () => {
     expect(types).toEqual({ count: "number" });
   });
 
+  test("onNumberChange resets array hidden metadata", () => {
+    const form = createForm(
+      '<input name="count" type="number" /><input type="hidden" name="$types" value="[1,2,3]" />',
+    );
+    const input = form.querySelector<HTMLInputElement>('input[name="count"]')!;
+
+    expect(() => onNumberChange({ target: input } as unknown as Event)).not.toThrow();
+
+    const types = JSON.parse(form.querySelector<HTMLInputElement>('input[name="$types"]')!.value);
+    expect(types).toEqual({ count: "number" });
+  });
+
+  test("onNumberChange resets primitive hidden metadata", () => {
+    const form = createForm(
+      '<input name="count" type="number" /><input type="hidden" name="$types" value="42" />',
+    );
+    const input = form.querySelector<HTMLInputElement>('input[name="count"]')!;
+
+    expect(() => onNumberChange({ target: input } as unknown as Event)).not.toThrow();
+
+    const types = JSON.parse(form.querySelector<HTMLInputElement>('input[name="$types"]')!.value);
+    expect(types).toEqual({ count: "number" });
+  });
+
   test("createChangeHandlers respects custom typesKey", () => {
     const form = createForm(
       '<input name="count" type="number" /><input name="active" type="checkbox" /><input name="createdAt" type="date" />',
