@@ -1,5 +1,5 @@
 import { DEFAULT_TYPES_KEY } from "./encode.ts";
-import { parsePath, unflatten } from "./path.ts";
+import { appendIndex, appendKey, parsePath, unflatten } from "./path.ts";
 import { getHandler } from "./types.ts";
 
 const STRUCTURAL_TYPES = new Set(["set", "map", "array", "object"]);
@@ -62,18 +62,16 @@ export function decode<T = unknown>(
     deserialized.push([path, value]);
   }
 
-  // Build a set of all entry paths for O(1) exact-match lookups
+  // Build lookup sets once so empty-container reconstruction does not scan
+  // all decoded entries for every structural metadata path.
   const entryPaths = new Set<string>();
   for (const [p] of deserialized) entryPaths.add(p);
+  const parentPaths = buildParentPathSet(entryPaths);
 
-  // Add empty container markers (prefix scan only runs when exact match misses)
+  // Add empty container markers
   for (const [path, typeId] of structuralPaths) {
     if (entryPaths.has(path)) continue;
-
-    const hasChildren = deserialized.some(
-      ([p]) => p.startsWith(path + ".") || p.startsWith(path + "["),
-    );
-    if (hasChildren) continue;
+    if (parentPaths.has(path)) continue;
 
     if (typeId === "set") {
       deserialized.push([path, new Set()]);
@@ -108,6 +106,27 @@ export function decode<T = unknown>(
   }
 
   return result as T;
+}
+
+function buildParentPathSet(paths: Set<string>): Set<string> {
+  const parentPaths = new Set<string>();
+
+  for (const path of paths) {
+    const segments = parsePath(path);
+    if (segments.length === 0) continue;
+
+    parentPaths.add("");
+
+    for (let i = 1; i < segments.length; i++) {
+      const parentPath = segments.slice(0, i).reduce<string>((current, segment) => {
+        if (typeof segment === "number") return appendIndex(current, segment);
+        return appendKey(current, segment);
+      }, "");
+      parentPaths.add(parentPath);
+    }
+  }
+
+  return parentPaths;
 }
 
 export async function decodeRequest<T = unknown>(

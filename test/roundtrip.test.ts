@@ -235,6 +235,43 @@ describe("encode/decode round-trip", () => {
     expect(roundtrip(input)).toEqual(input);
   });
 
+  test("decode reconstructs empty containers without repeated prefix scans", () => {
+    const startsWithDescriptor = Object.getOwnPropertyDescriptor(String.prototype, "startsWith")!;
+    const originalStartsWith = startsWithDescriptor.value as typeof String.prototype.startsWith;
+    const startsWithCalls = { count: 0 };
+    String.prototype.startsWith = function startsWith(
+      searchString: string,
+      position?: number,
+    ): boolean {
+      startsWithCalls.count++;
+      return originalStartsWith.call(this, searchString, position);
+    };
+
+    try {
+      const types = Object.fromEntries(
+        Array.from({ length: 100 }, (_, index) => [`empty${index}`, "array"]),
+      );
+      const entries: [string, string][] = [
+        ...Array.from({ length: 100 }, (_, index): [string, string] => [
+          `value${index}`,
+          String(index),
+        ]),
+        ["$types", JSON.stringify(types)],
+      ];
+
+      expect(decode(entries)).toEqual(
+        Object.fromEntries([
+          ...Array.from({ length: 100 }, (_, index) => [`value${index}`, String(index)]),
+          ...Array.from({ length: 100 }, (_, index) => [`empty${index}`, []]),
+        ]),
+      );
+    } finally {
+      Object.defineProperty(String.prototype, "startsWith", startsWithDescriptor);
+    }
+
+    expect(startsWithCalls.count).toBeLessThan(100);
+  });
+
   test("object with numeric string keys", () => {
     const input = { "0": "zero", "1": "one", name: "test" };
     const result = roundtrip(input) as Record<string, string>;
