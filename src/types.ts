@@ -9,6 +9,11 @@ export type TypeHandlerList = readonly TypeHandler<any>[];
 
 type RegisteredTypeHandler = TypeHandler<unknown>;
 
+export interface TypeRegistry {
+  readonly handlers: readonly RegisteredTypeHandler[];
+  readonly handlerMap: ReadonlyMap<string, RegisteredTypeHandler>;
+}
+
 const NUMBER_PATTERN = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/;
 const RESERVED_TYPE_IDS = new Set(["set", "map", "array", "object"]);
 
@@ -145,11 +150,17 @@ for (const handler of typeHandlers) {
   handlerMap.set(handler.id, handler);
 }
 
-export function createTypeRegistry(customHandlers?: TypeHandlerList): RegisteredTypeHandler[] {
-  if (!customHandlers || customHandlers.length === 0) return typeHandlers;
+const builtInRegistry: TypeRegistry = {
+  handlers: typeHandlers,
+  handlerMap,
+};
+
+export function createTypeRegistry(customHandlers?: TypeHandlerList): TypeRegistry {
+  if (!customHandlers || customHandlers.length === 0) return builtInRegistry;
 
   const seen = new Set<string>();
   const handlers: RegisteredTypeHandler[] = [];
+  const customHandlerMap = new Map(handlerMap);
 
   for (const handler of customHandlers) {
     if (handler.id === "") {
@@ -162,24 +173,28 @@ export function createTypeRegistry(customHandlers?: TypeHandlerList): Registered
       throw new TypeError(`Duplicate custom type handler id "${handler.id}"`);
     }
     seen.add(handler.id);
-    handlers.push(defineTypeHandler(handler));
+    const registeredHandler = defineTypeHandler(handler);
+    handlers.push(registeredHandler);
+    customHandlerMap.set(handler.id, registeredHandler);
   }
 
-  return [...handlers, ...typeHandlers];
+  return {
+    handlers: [...handlers, ...typeHandlers],
+    handlerMap: customHandlerMap,
+  };
 }
 
 export function findHandler(
   value: unknown,
-  handlers: readonly RegisteredTypeHandler[] = typeHandlers,
+  registry: TypeRegistry = builtInRegistry,
 ): RegisteredTypeHandler | undefined {
   if (typeof value === "string") return undefined;
-  return handlers.find((h) => h.test(value));
+  return registry.handlers.find((h) => h.test(value));
 }
 
 export function getHandler(
   id: string,
-  handlers: readonly RegisteredTypeHandler[] = typeHandlers,
+  registry: TypeRegistry = builtInRegistry,
 ): RegisteredTypeHandler | undefined {
-  if (handlers === typeHandlers) return handlerMap.get(id);
-  return handlers.find((handler) => handler.id === id);
+  return registry.handlerMap.get(id);
 }
