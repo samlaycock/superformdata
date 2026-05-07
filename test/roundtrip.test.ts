@@ -255,6 +255,10 @@ describe("encode/decode round-trip", () => {
     );
   });
 
+  test("decode rejects array indexes that would create sparse arrays", () => {
+    expect(() => decode([["a[100000000]", "x"]])).toThrow("Array index too large");
+  });
+
   test("object with numeric string keys", () => {
     const input = { "0": "zero", "1": "one", name: "test" };
     const result = roundtrip(input) as Record<string, string>;

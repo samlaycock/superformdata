@@ -15,6 +15,9 @@ export function appendIndex(path: string, index: number): string {
   return `${path}[${index}]`;
 }
 
+const MAX_ARRAY_INDEX = 100_000;
+const ARRAY_INDEX_PATTERN = /^(?:0|[1-9]\d*)$/;
+
 export type PathSegment = string | number;
 type PathContainer = Record<string | number, unknown>;
 
@@ -32,6 +35,22 @@ function assignPathValue(container: PathContainer, segment: PathSegment, value: 
   }
 
   container[segment] = [existing, value];
+}
+
+function parseArrayIndex(raw: string, path: string): number {
+  if (!ARRAY_INDEX_PATTERN.test(raw)) {
+    throw new TypeError(`Invalid array index "${raw}" in path "${path}"`);
+  }
+
+  const index = Number(raw);
+  if (!Number.isSafeInteger(index)) {
+    throw new TypeError(`Invalid array index "${raw}" in path "${path}"`);
+  }
+  if (index > MAX_ARRAY_INDEX) {
+    throw new TypeError(`Array index too large in path "${path}": ${index}`);
+  }
+
+  return index;
 }
 
 export function parsePath(path: string): PathSegment[] {
@@ -66,7 +85,7 @@ export function parsePath(path: string): PathSegment[] {
         current += path.slice(i);
         break;
       }
-      segments.push(Number(path.slice(i + 1, close)));
+      segments.push(parseArrayIndex(path.slice(i + 1, close), path));
       i = close + 1;
       // skip trailing dot after bracket (e.g., `[0].name`)
       if (path[i] === ".") i++;
