@@ -55,7 +55,12 @@ export function decode<T = unknown>(
     if (typeId && !STRUCTURAL_TYPES.has(typeId)) {
       const handler = getHandler(typeId);
       if (handler) {
-        deserialized.push([path, handler.deserialize(value)]);
+        try {
+          deserialized.push([path, handler.deserialize(value)]);
+        } catch (error) {
+          const reason = error instanceof Error ? error.message : `could not deserialize ${typeId}`;
+          throw new TypeError(`Invalid value for typed field "${path}": ${reason}`);
+        }
         continue;
       }
     }

@@ -134,4 +134,38 @@ describe("type registry", () => {
   test("handler priority: Infinity before number", () => {
     expect(findHandler(Infinity)!.id).toBe("infinity");
   });
+
+  test.each([
+    [
+      "Date",
+      "when",
+      "not-a-date",
+      'Invalid value for typed field "when": expected Date metadata-compatible value',
+    ],
+    [
+      "number",
+      "count",
+      "not-a-number",
+      'Invalid value for typed field "count": expected number metadata-compatible value',
+    ],
+    [
+      "boolean",
+      "active",
+      "yes",
+      'Invalid value for typed field "active": expected boolean metadata-compatible value',
+    ],
+    [
+      "RegExp",
+      "pattern",
+      "unterminated",
+      'Invalid value for typed field "pattern": expected RegExp metadata-compatible value',
+    ],
+  ])("decode rejects malformed %s values", (typeId, path, value, message) => {
+    expect(() =>
+      decode([
+        [path, value],
+        ["$types", JSON.stringify({ [path]: typeId })],
+      ]),
+    ).toThrow(message);
+  });
 });
