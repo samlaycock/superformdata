@@ -80,6 +80,10 @@ describe("parsePath", () => {
     expect(() => parsePath("items[Infinity]")).toThrow("Invalid array index");
   });
 
+  test("rejects non-canonical bracket index", () => {
+    expect(() => parsePath("items[01]")).toThrow("Invalid array index");
+  });
+
   test("rejects pathological bracket index", () => {
     expect(() => parsePath("items[100000000]")).toThrow("Array index too large");
   });
