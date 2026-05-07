@@ -1,8 +1,8 @@
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
-import { decode } from "../src/decode.ts";
-import { encode } from "../src/encode.ts";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+
 import type { TypeHandler } from "../src/types.ts";
+
 import {
   createChangeHandlers,
   onBigIntChange,
@@ -12,6 +12,8 @@ import {
   onNumberChange,
   onURLChange,
 } from "../src/client.ts";
+import { decode } from "../src/decode.ts";
+import { encode } from "../src/encode.ts";
 
 beforeEach(() => {
   GlobalRegistrator.register();

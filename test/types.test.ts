@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+
 import { decode, decodeRequest, encode, type TypeHandler } from "../src/index.ts";
 import { findHandler, getHandler } from "../src/types.ts";
 
