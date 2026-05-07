@@ -22,6 +22,7 @@ export interface EncodeOptions {
 
 export function encode<T>(input: T, options?: EncodeOptions): [string, string][] {
   const typesKey = options?.typesKey ?? DEFAULT_TYPES_KEY;
+  const registry = createTypeRegistry(options?.typeHandlers);
 
   // HTMLFormElement
   if (typeof HTMLFormElement !== "undefined" && input instanceof HTMLFormElement) {
@@ -37,9 +38,8 @@ export function encode<T>(input: T, options?: EncodeOptions): [string, string][]
   const entries: [string, string][] = [];
   const types: Record<string, string> = {};
   const seen = new Set<unknown>();
-  const handlers = createTypeRegistry(options?.typeHandlers);
 
-  walk(input, "", entries, types, seen, handlers);
+  walk(input, "", entries, types, seen, registry);
 
   if (Object.keys(types).length > 0) {
     entries.push([typesKey, JSON.stringify(types)]);
@@ -187,14 +187,14 @@ function walk(
   entries: [string, string][],
   types: Record<string, string>,
   seen: Set<unknown>,
-  handlers: ReturnType<typeof createTypeRegistry>,
+  registry: ReturnType<typeof createTypeRegistry>,
 ): void {
   if (value instanceof Set) {
     trackRef(value, path, seen);
     types[path] = "set";
     let i = 0;
     for (const item of value) {
-      walk(item, appendIndex(path, i), entries, types, seen, handlers);
+      walk(item, appendIndex(path, i), entries, types, seen, registry);
       i++;
     }
     seen.delete(value);
@@ -206,8 +206,8 @@ function walk(
     types[path] = "map";
     let i = 0;
     for (const [k, v] of value) {
-      walk(k, appendIndex(appendIndex(path, i), 0), entries, types, seen, handlers);
-      walk(v, appendIndex(appendIndex(path, i), 1), entries, types, seen, handlers);
+      walk(k, appendIndex(appendIndex(path, i), 0), entries, types, seen, registry);
+      walk(v, appendIndex(appendIndex(path, i), 1), entries, types, seen, registry);
       i++;
     }
     seen.delete(value);
@@ -222,13 +222,13 @@ function walk(
       return;
     }
     for (let i = 0; i < value.length; i++) {
-      walk(value[i], appendIndex(path, i), entries, types, seen, handlers);
+      walk(value[i], appendIndex(path, i), entries, types, seen, registry);
     }
     seen.delete(value);
     return;
   }
 
-  const handler = findHandler(value, handlers);
+  const handler = findHandler(value, registry);
   if (handler) {
     entries.push([path, handler.serialize(value)]);
     types[path] = handler.id;
@@ -244,7 +244,7 @@ function walk(
       return;
     }
     for (const key of keys) {
-      walk(value[key], appendKey(path, key), entries, types, seen, handlers);
+      walk(value[key], appendKey(path, key), entries, types, seen, registry);
     }
     seen.delete(value);
     return;

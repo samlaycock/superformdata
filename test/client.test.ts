@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import { decode } from "../src/decode.ts";
 import { encode } from "../src/encode.ts";
+import type { TypeHandler } from "../src/types.ts";
 import {
   createChangeHandlers,
   onBigIntChange,
@@ -24,6 +25,13 @@ function createForm(html: string): HTMLFormElement {
   document.body.innerHTML = `<form>${html}</form>`;
   return document.querySelector("form")!;
 }
+
+const invalidTypeHandler: TypeHandler<unknown> = {
+  id: "number",
+  test: (value): value is unknown => value !== undefined,
+  serialize: String,
+  deserialize: (raw) => raw,
+};
 
 // --- onChange handlers ---
 
@@ -278,6 +286,14 @@ describe("encode(form)", () => {
     expect(entries.find(([k]) => k === "$types")).toBeUndefined();
   });
 
+  test("validates custom type handlers for form inputs", () => {
+    const form = createForm('<input name="count" value="42" />');
+
+    expect(() => encode(form, { typeHandlers: [invalidTypeHandler] })).toThrow(
+      'Custom type handler id "number" is reserved',
+    );
+  });
+
   test("excludes button elements by default (no submitter)", () => {
     const form = createForm(
       '<input name="title" value="hello" /><button name="action" value="save">Save</button>',
@@ -415,6 +431,15 @@ describe("encode(FormData)", () => {
       ["name", "Alice"],
       ["city", "NYC"],
     ]);
+  });
+
+  test("validates custom type handlers for FormData inputs", () => {
+    const fd = new FormData();
+    fd.append("count", "42");
+
+    expect(() => encode(fd, { typeHandlers: [invalidTypeHandler] })).toThrow(
+      'Custom type handler id "number" is reserved',
+    );
   });
 
   test("encode(FormData) round-trips through decode", () => {
