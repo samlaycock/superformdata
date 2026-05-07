@@ -3,6 +3,7 @@ import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import { decode } from "../src/decode.ts";
 import { encode } from "../src/encode.ts";
 import {
+  createChangeHandlers,
   onBigIntChange,
   onBooleanChange,
   onChange,
@@ -62,6 +63,29 @@ describe("onChange handlers", () => {
 
     const types = JSON.parse(form.querySelector<HTMLInputElement>('input[name="$types"]')!.value);
     expect(types.count).toBe("number");
+  });
+
+  test("createChangeHandlers respects custom typesKey", () => {
+    const form = createForm(
+      '<input name="count" type="number" /><input name="active" type="checkbox" />',
+    );
+    const countInput = form.querySelector<HTMLInputElement>('input[name="count"]')!;
+    const activeInput = form.querySelector<HTMLInputElement>('input[name="active"]')!;
+    const handlers = createChangeHandlers({ typesKey: "__meta" });
+
+    countInput.value = "42";
+    activeInput.checked = true;
+
+    handlers.onNumberChange({ target: countInput } as unknown as Event);
+    handlers.onBooleanChange({ target: activeInput } as unknown as Event);
+
+    expect(form.querySelector<HTMLInputElement>('input[name="$types"]')).toBeNull();
+    const typesInput = form.querySelector<HTMLInputElement>('input[name="__meta"]');
+    expect(typesInput).toBeDefined();
+    expect(JSON.parse(typesInput!.value)).toEqual({
+      active: "boolean",
+      count: "number",
+    });
   });
 
   test("onBooleanChange sets value from checked state", () => {
