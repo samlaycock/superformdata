@@ -72,6 +72,18 @@ describe("parsePath", () => {
     expect(parsePath("items[0]")).toEqual(["items", 0]);
   });
 
+  test("rejects negative bracket index", () => {
+    expect(() => parsePath("items[-1]")).toThrow("Invalid array index");
+  });
+
+  test("rejects non-finite bracket index", () => {
+    expect(() => parsePath("items[Infinity]")).toThrow("Invalid array index");
+  });
+
+  test("rejects pathological bracket index", () => {
+    expect(() => parsePath("items[100000000]")).toThrow("Array index too large");
+  });
+
   test("mixed dot and bracket", () => {
     expect(parsePath("items[0].name")).toEqual(["items", 0, "name"]);
   });
