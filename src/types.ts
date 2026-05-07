@@ -29,15 +29,15 @@ function deserializeDate(raw: string): Date {
 }
 
 function deserializeRegExp(raw: string): RegExp {
-  if (!raw.startsWith("/")) invalidTypedValue("RegExp");
+  if (!raw.startsWith("/")) return invalidTypedValue("RegExp");
 
   const lastSlash = raw.lastIndexOf("/");
-  if (lastSlash <= 0) invalidTypedValue("RegExp");
+  if (lastSlash <= 0) return invalidTypedValue("RegExp");
 
   try {
     return new RegExp(raw.slice(1, lastSlash), raw.slice(lastSlash + 1));
   } catch {
-    invalidTypedValue("RegExp");
+    return invalidTypedValue("RegExp");
   }
 }
 
@@ -52,7 +52,7 @@ function deserializeNumber(raw: string): number {
 function deserializeBoolean(raw: string): boolean {
   if (raw === "true") return true;
   if (raw === "false") return false;
-  invalidTypedValue("boolean");
+  return invalidTypedValue("boolean");
 }
 
 export const typeHandlers: RegisteredTypeHandler[] = [
