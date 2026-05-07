@@ -67,17 +67,20 @@ describe("onChange handlers", () => {
 
   test("createChangeHandlers respects custom typesKey", () => {
     const form = createForm(
-      '<input name="count" type="number" /><input name="active" type="checkbox" />',
+      '<input name="count" type="number" /><input name="active" type="checkbox" /><input name="createdAt" type="date" />',
     );
     const countInput = form.querySelector<HTMLInputElement>('input[name="count"]')!;
     const activeInput = form.querySelector<HTMLInputElement>('input[name="active"]')!;
+    const createdAtInput = form.querySelector<HTMLInputElement>('input[name="createdAt"]')!;
     const handlers = createChangeHandlers({ typesKey: "__meta" });
 
     countInput.value = "42";
     activeInput.checked = true;
+    createdAtInput.value = "2024-01-01";
 
     handlers.onNumberChange({ target: countInput } as unknown as Event);
     handlers.onBooleanChange({ target: activeInput } as unknown as Event);
+    handlers.onDateChange({ target: createdAtInput } as unknown as Event);
 
     expect(form.querySelector<HTMLInputElement>('input[name="$types"]')).toBeNull();
     const typesInput = form.querySelector<HTMLInputElement>('input[name="__meta"]');
@@ -85,6 +88,7 @@ describe("onChange handlers", () => {
     expect(JSON.parse(typesInput!.value)).toEqual({
       active: "boolean",
       count: "number",
+      createdAt: "Date",
     });
   });
 
