@@ -12,6 +12,17 @@ export interface ChangeHandlers {
   readonly onURLChange: (event: Event) => void;
 }
 
+function parseFormTypes(value: string): Record<string, string> {
+  if (!value) return {};
+
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
 function updateFormTypes(
   form: HTMLFormElement,
   name: string,
@@ -32,7 +43,7 @@ function updateFormTypes(
       return newInput;
     })();
 
-  const types: Record<string, string> = input.value ? JSON.parse(input.value) : {};
+  const types = parseFormTypes(input.value);
   types[name] = typeId;
   input.value = JSON.stringify(types);
 }
