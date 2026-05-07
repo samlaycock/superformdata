@@ -7,6 +7,8 @@ export interface TypeHandler<T = unknown> {
 
 type RegisteredTypeHandler = TypeHandler<unknown>;
 
+const NUMBER_PATTERN = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/;
+
 function defineTypeHandler<T>(handler: TypeHandler<T>): RegisteredTypeHandler {
   return {
     id: handler.id,
@@ -14,6 +16,43 @@ function defineTypeHandler<T>(handler: TypeHandler<T>): RegisteredTypeHandler {
     serialize: (value) => handler.serialize(value as T),
     deserialize: (raw) => handler.deserialize(raw),
   };
+}
+
+function invalidTypedValue(typeId: string): never {
+  throw new TypeError(`expected ${typeId} metadata-compatible value`);
+}
+
+function deserializeDate(raw: string): Date {
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) invalidTypedValue("Date");
+  return date;
+}
+
+function deserializeRegExp(raw: string): RegExp {
+  if (!raw.startsWith("/")) invalidTypedValue("RegExp");
+
+  const lastSlash = raw.lastIndexOf("/");
+  if (lastSlash <= 0) invalidTypedValue("RegExp");
+
+  try {
+    return new RegExp(raw.slice(1, lastSlash), raw.slice(lastSlash + 1));
+  } catch {
+    invalidTypedValue("RegExp");
+  }
+}
+
+function deserializeNumber(raw: string): number {
+  if (!NUMBER_PATTERN.test(raw)) invalidTypedValue("number");
+
+  const value = Number(raw);
+  if (!Number.isFinite(value)) invalidTypedValue("number");
+  return value;
+}
+
+function deserializeBoolean(raw: string): boolean {
+  if (raw === "true") return true;
+  if (raw === "false") return false;
+  invalidTypedValue("boolean");
 }
 
 export const typeHandlers: RegisteredTypeHandler[] = [
@@ -57,16 +96,13 @@ export const typeHandlers: RegisteredTypeHandler[] = [
     id: "Date",
     test: (v): v is Date => v instanceof Date,
     serialize: (v) => v.toISOString(),
-    deserialize: (s) => new Date(s),
+    deserialize: deserializeDate,
   }),
   defineTypeHandler({
     id: "RegExp",
     test: (v): v is RegExp => v instanceof RegExp,
     serialize: (v) => v.toString(),
-    deserialize: (s) => {
-      const lastSlash = s.lastIndexOf("/");
-      return new RegExp(s.slice(1, lastSlash), s.slice(lastSlash + 1));
-    },
+    deserialize: deserializeRegExp,
   }),
   defineTypeHandler({
     id: "URL",
@@ -84,13 +120,13 @@ export const typeHandlers: RegisteredTypeHandler[] = [
     id: "number",
     test: (v): v is number => typeof v === "number",
     serialize: (v) => String(v),
-    deserialize: (s) => Number(s),
+    deserialize: deserializeNumber,
   }),
   defineTypeHandler({
     id: "boolean",
     test: (v): v is boolean => typeof v === "boolean",
     serialize: (v) => String(v),
-    deserialize: (s) => s === "true",
+    deserialize: deserializeBoolean,
   }),
   defineTypeHandler({
     id: "null",
