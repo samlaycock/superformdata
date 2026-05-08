@@ -62,10 +62,7 @@ export function decode<T = unknown>(
   for (const [path, value] of raw) {
     const typeId = types[path];
     if (typeId && !STRUCTURAL_TYPES.has(typeId)) {
-      const handler = getHandler(typeId, registry);
-      if (!handler) {
-        throw new TypeError(`Unknown type id "${typeId}" for typed field "${path}"`);
-      }
+      const handler = getHandler(typeId, registry)!;
       try {
         deserialized.push([path, handler.deserialize(value)]);
       } catch (error) {
