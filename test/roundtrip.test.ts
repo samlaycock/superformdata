@@ -371,6 +371,28 @@ describe("encode/decode round-trip", () => {
     ).toThrow("malformed JSON");
   });
 
+  test("decode throws on non-object $types metadata", () => {
+    const invalidMetadata = ["null", "[]", '"string"', "42", "true"];
+
+    for (const metadata of invalidMetadata) {
+      expect(() =>
+        decode([
+          ["name", "Alice"],
+          ["$types", metadata],
+        ]),
+      ).toThrow("must be an object");
+    }
+  });
+
+  test("decode throws on non-string $types metadata values", () => {
+    expect(() =>
+      decode([
+        ["age", "30"],
+        ["$types", JSON.stringify({ age: 30 })],
+      ]),
+    ).toThrow("must map paths to string type ids");
+  });
+
   test("decode throws on File entries in FormData", () => {
     const formData = new FormData();
     formData.append("name", "Alice");
