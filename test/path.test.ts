@@ -190,6 +190,42 @@ describe("unflatten", () => {
     ).toEqual({ user: { tags: ["a", "b"] } });
   });
 
+  test("rejects scalar before object path collisions", () => {
+    expect(() =>
+      unflatten([
+        ["a", "x"],
+        ["a.b", "y"],
+      ]),
+    ).toThrow('Path collision at "a" while decoding path "a.b"');
+  });
+
+  test("rejects object before scalar path collisions", () => {
+    expect(() =>
+      unflatten([
+        ["a.b", "y"],
+        ["a", "x"],
+      ]),
+    ).toThrow('Path collision at "a" while decoding path "a"');
+  });
+
+  test("rejects scalar before array path collisions", () => {
+    expect(() =>
+      unflatten([
+        ["a", "x"],
+        ["a[0]", "y"],
+      ]),
+    ).toThrow('Path collision at "a" while decoding path "a[0]"');
+  });
+
+  test("rejects array before scalar path collisions", () => {
+    expect(() =>
+      unflatten([
+        ["a[0]", "y"],
+        ["a", "x"],
+      ]),
+    ).toThrow('Path collision at "a" while decoding path "a"');
+  });
+
   test("rejects path segments that can mutate object prototypes", () => {
     expect(() => unflatten([["__proto__.polluted", "yes"]])).toThrow(
       'Unsafe path segment "__proto__"',
