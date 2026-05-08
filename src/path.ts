@@ -56,14 +56,31 @@ function isObject(value: unknown): value is object {
   return (typeof value === "object" && value !== null) || typeof value === "function";
 }
 
-function assertNotPathCollision(
+function assertNotContainerOverwrite(
   value: unknown,
   containers: WeakSet<object>,
-  collisionPath: string,
   path: string,
 ): void {
   if (isObject(value) && containers.has(value)) {
+    throw new TypeError(`Path collision at "${path}": cannot overwrite existing container`);
+  }
+}
+
+function assertCompatibleContainer(
+  value: unknown,
+  containers: WeakSet<object>,
+  nextSegment: PathSegment,
+  collisionPath: string,
+  path: string,
+): void {
+  if (!isObject(value) || !containers.has(value)) {
     throw new TypeError(`Path collision at "${collisionPath}" while decoding path "${path}"`);
+  }
+
+  if (Array.isArray(value) !== (typeof nextSegment === "number")) {
+    throw new TypeError(
+      `Path collision at "${collisionPath}" while decoding path "${path}": incompatible container type`,
+    );
   }
 }
 
@@ -154,16 +171,20 @@ export function unflatten(entries: [string, unknown][]): unknown {
         const nextContainer = (typeof nextSeg === "number" ? [] : {}) as PathContainer;
         current[seg] = nextContainer;
         containers.add(nextContainer);
-      } else if (!isObject(current[seg]) || !containers.has(current[seg])) {
-        throw new TypeError(
-          `Path collision at "${formatPath(segments.slice(0, i + 1))}" while decoding path "${path}"`,
+      } else {
+        assertCompatibleContainer(
+          current[seg],
+          containers,
+          nextSeg,
+          formatPath(segments.slice(0, i + 1)),
+          path,
         );
       }
       current = current[seg] as PathContainer;
     }
 
     const lastSeg = segments[segments.length - 1]!;
-    assertNotPathCollision(current[lastSeg], containers, formatPath(segments), path);
+    assertNotContainerOverwrite(current[lastSeg], containers, path);
     assignPathValue(current, lastSeg, value);
   }
 
