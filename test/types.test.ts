@@ -209,6 +209,24 @@ describe("type registry", () => {
     ).toEqual({ price: { cents: 500 } });
   });
 
+  test("decode rejects unregistered custom type ids in metadata", () => {
+    expect(() =>
+      decode([
+        ["price", "500"],
+        ["$types", JSON.stringify({ price: "Money" })],
+      ]),
+    ).toThrow('Unknown type id "Money" for typed field "price"');
+  });
+
+  test("decode rejects typoed built-in type ids in metadata", () => {
+    expect(() =>
+      decode([
+        ["createdAt", "2024-01-01T00:00:00.000Z"],
+        ["$types", JSON.stringify({ createdAt: "date" })],
+      ]),
+    ).toThrow('Unknown type id "date" for typed field "createdAt"');
+  });
+
   test("custom type handler ids cannot collide with built-in or structural ids", () => {
     expect(() => encode(1, { typeHandlers: [{ ...moneyHandler, id: "number" }] })).toThrow(
       'Custom type handler id "number" is reserved',

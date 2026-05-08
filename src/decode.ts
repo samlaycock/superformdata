@@ -1,6 +1,11 @@
 import { DEFAULT_TYPES_KEY } from "./encode.ts";
 import { appendIndex, appendKey, parsePath, unflatten } from "./path.ts";
-import { createTypeRegistry, getHandler, type TypeHandlerList } from "./types.ts";
+import {
+  createTypeRegistry,
+  getHandler,
+  type TypeHandlerList,
+  type TypeRegistry,
+} from "./types.ts";
 
 const STRUCTURAL_TYPES = new Set(["set", "map", "array", "object"]);
 
@@ -41,6 +46,7 @@ export function decode<T = unknown>(
       );
     }
     validateTypesMetadata(types, typesKey);
+    validateKnownTypeIds(types, registry);
   }
 
   // Collect structural type paths and empty container paths
@@ -57,15 +63,16 @@ export function decode<T = unknown>(
     const typeId = types[path];
     if (typeId && !STRUCTURAL_TYPES.has(typeId)) {
       const handler = getHandler(typeId, registry);
-      if (handler) {
-        try {
-          deserialized.push([path, handler.deserialize(value)]);
-        } catch (error) {
-          const reason = error instanceof Error ? error.message : `could not deserialize ${typeId}`;
-          throw new TypeError(`Invalid value for typed field "${path}": ${reason}`);
-        }
-        continue;
+      if (!handler) {
+        throw new TypeError(`Unknown type id "${typeId}" for typed field "${path}"`);
       }
+      try {
+        deserialized.push([path, handler.deserialize(value)]);
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : `could not deserialize ${typeId}`;
+        throw new TypeError(`Invalid value for typed field "${path}": ${reason}`);
+      }
+      continue;
     }
     deserialized.push([path, value]);
   }
@@ -130,6 +137,15 @@ function validateTypesMetadata(
         `Invalid superformdata metadata: "${typesKey}" field must map paths to string type ids (path: "${path}")`,
       );
     }
+  }
+}
+
+function validateKnownTypeIds(types: Record<string, string>, registry: TypeRegistry): void {
+  for (const [path, typeId] of Object.entries(types)) {
+    if (STRUCTURAL_TYPES.has(typeId)) continue;
+    if (getHandler(typeId, registry)) continue;
+
+    throw new TypeError(`Unknown type id "${typeId}" for typed field "${path}"`);
   }
 }
 
