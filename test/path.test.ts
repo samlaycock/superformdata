@@ -189,4 +189,16 @@ describe("unflatten", () => {
       ]),
     ).toEqual({ user: { tags: ["a", "b"] } });
   });
+
+  test("rejects path segments that can mutate object prototypes", () => {
+    expect(() => unflatten([["__proto__.polluted", "yes"]])).toThrow(
+      'Unsafe path segment "__proto__"',
+    );
+    expect(() => unflatten([["constructor.prototype.polluted", "yes"]])).toThrow(
+      'Unsafe path segment "constructor"',
+    );
+    expect(() => unflatten([["prototype.polluted", "yes"]])).toThrow(
+      'Unsafe path segment "prototype"',
+    );
+  });
 });

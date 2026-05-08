@@ -17,9 +17,17 @@ export function appendIndex(path: string, index: number): string {
 
 const MAX_ARRAY_INDEX = 100_000;
 const ARRAY_INDEX_PATTERN = /^(?:0|[1-9]\d*)$/;
+const UNSAFE_OBJECT_KEYS = new Set(["__proto__", "prototype", "constructor"]);
 
 export type PathSegment = string | number;
 type PathContainer = Record<string | number, unknown>;
+
+function assertSafePathSegment(segment: PathSegment, path: string): void {
+  if (typeof segment === "number") return;
+  if (!UNSAFE_OBJECT_KEYS.has(segment)) return;
+
+  throw new TypeError(`Unsafe path segment "${segment}" in path "${path}"`);
+}
 
 function assignPathValue(container: PathContainer, segment: PathSegment, value: unknown): void {
   const existing = container[segment];
@@ -109,6 +117,9 @@ export function unflatten(entries: [string, unknown][]): unknown {
   for (const [path, value] of entries) {
     const segments = parsePath(path);
     if (segments.length === 0) continue;
+    for (const segment of segments) {
+      assertSafePathSegment(segment, path);
+    }
 
     let current: PathContainer = root;
 

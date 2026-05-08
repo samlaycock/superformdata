@@ -355,6 +355,13 @@ describe("encode/decode round-trip", () => {
     expect(decode<Record<string, never>>([])).toEqual({});
   });
 
+  test("decode rejects prototype pollution path segments", () => {
+    expect(() => decode([["__proto__.polluted", "yes"]])).toThrow(
+      'Unsafe path segment "__proto__"',
+    );
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+  });
+
   test("decode throws on malformed $types JSON", () => {
     expect(() =>
       decode([
