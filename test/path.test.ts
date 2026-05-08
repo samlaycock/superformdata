@@ -205,7 +205,7 @@ describe("unflatten", () => {
         ["a.b", "y"],
         ["a", "x"],
       ]),
-    ).toThrow('Path collision at "a" while decoding path "a"');
+    ).toThrow('Path collision at "a": cannot overwrite existing container');
   });
 
   test("rejects scalar before array path collisions", () => {
@@ -223,7 +223,25 @@ describe("unflatten", () => {
         ["a[0]", "y"],
         ["a", "x"],
       ]),
-    ).toThrow('Path collision at "a" while decoding path "a"');
+    ).toThrow('Path collision at "a": cannot overwrite existing container');
+  });
+
+  test("rejects array before object path collisions", () => {
+    expect(() =>
+      unflatten([
+        ["a[0]", "x"],
+        ["a.b", "y"],
+      ]),
+    ).toThrow('Path collision at "a" while decoding path "a.b": incompatible container type');
+  });
+
+  test("rejects object before array path collisions", () => {
+    expect(() =>
+      unflatten([
+        ["a.b", "x"],
+        ["a[0]", "y"],
+      ]),
+    ).toThrow('Path collision at "a" while decoding path "a[0]": incompatible container type');
   });
 
   test("rejects path segments that can mutate object prototypes", () => {
