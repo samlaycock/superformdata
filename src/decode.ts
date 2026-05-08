@@ -40,6 +40,7 @@ export function decode<T = unknown>(
         `Invalid superformdata metadata: "${typesKey}" field contains malformed JSON`,
       );
     }
+    validateTypesMetadata(types, typesKey);
   }
 
   // Collect structural type paths and empty container paths
@@ -113,6 +114,23 @@ export function decode<T = unknown>(
   }
 
   return result as T;
+}
+
+function validateTypesMetadata(
+  types: unknown,
+  typesKey: string,
+): asserts types is Record<string, string> {
+  if (types === null || typeof types !== "object" || Array.isArray(types)) {
+    throw new TypeError(`Invalid superformdata metadata: "${typesKey}" field must be an object`);
+  }
+
+  for (const [path, typeId] of Object.entries(types)) {
+    if (typeof typeId !== "string") {
+      throw new TypeError(
+        `Invalid superformdata metadata: "${typesKey}" field must map paths to string type ids (path: "${path}")`,
+      );
+    }
+  }
 }
 
 function buildParentPathSet(paths: Set<string>): Set<string> {
