@@ -45,6 +45,28 @@ function assignPathValue(container: PathContainer, segment: PathSegment, value: 
   container[segment] = [existing, value];
 }
 
+function formatPath(segments: PathSegment[]): string {
+  return segments.reduce<string>((path, segment) => {
+    if (typeof segment === "number") return appendIndex(path, segment);
+    return appendKey(path, segment);
+  }, "");
+}
+
+function isObject(value: unknown): value is object {
+  return (typeof value === "object" && value !== null) || typeof value === "function";
+}
+
+function assertNotPathCollision(
+  value: unknown,
+  containers: WeakSet<object>,
+  collisionPath: string,
+  path: string,
+): void {
+  if (isObject(value) && containers.has(value)) {
+    throw new TypeError(`Path collision at "${collisionPath}" while decoding path "${path}"`);
+  }
+}
+
 function parseArrayIndex(raw: string, path: string): number {
   if (!ARRAY_INDEX_PATTERN.test(raw)) {
     throw new TypeError(`Invalid array index "${raw}" in path "${path}"`);
@@ -113,6 +135,7 @@ export function unflatten(entries: [string, unknown][]): unknown {
 
   const firstPath = entries[0]![0];
   const root = (firstPath.startsWith("[") ? [] : {}) as PathContainer;
+  const containers = new WeakSet<object>([root]);
 
   for (const [path, value] of entries) {
     const segments = parsePath(path);
@@ -128,12 +151,19 @@ export function unflatten(entries: [string, unknown][]): unknown {
       const nextSeg = segments[i + 1]!;
 
       if (current[seg] === undefined) {
-        current[seg] = (typeof nextSeg === "number" ? [] : {}) as PathContainer;
+        const nextContainer = (typeof nextSeg === "number" ? [] : {}) as PathContainer;
+        current[seg] = nextContainer;
+        containers.add(nextContainer);
+      } else if (!isObject(current[seg]) || !containers.has(current[seg])) {
+        throw new TypeError(
+          `Path collision at "${formatPath(segments.slice(0, i + 1))}" while decoding path "${path}"`,
+        );
       }
       current = current[seg] as PathContainer;
     }
 
     const lastSeg = segments[segments.length - 1]!;
+    assertNotPathCollision(current[lastSeg], containers, formatPath(segments), path);
     assignPathValue(current, lastSeg, value);
   }
 
