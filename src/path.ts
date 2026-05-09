@@ -16,6 +16,7 @@ export function appendIndex(path: string, index: number): string {
 }
 
 const MAX_ARRAY_INDEX = 100_000;
+export const MAX_SPARSE_ARRAY_LENGTH = 100_000;
 const ARRAY_INDEX_PATTERN = /^(?:0|[1-9]\d*)$/;
 const UNSAFE_OBJECT_KEYS = new Set(["__proto__", "prototype", "constructor"]);
 
