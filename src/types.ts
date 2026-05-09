@@ -15,6 +15,7 @@ export interface TypeRegistry {
 }
 
 interface SerializedError {
+  readonly __superformdataError: 1;
   readonly name: string;
   readonly message: string;
   readonly cause?: SerializedError | string;
@@ -87,6 +88,7 @@ function serializeErrorDetails(
     nextSeen.add(error);
 
     return {
+      __superformdataError: 1,
       name: error.name,
       message: error.message,
       cause: serializeErrorCause(cause, nextSeen),
@@ -94,6 +96,7 @@ function serializeErrorDetails(
   }
 
   return {
+    __superformdataError: 1,
     name: error.name,
     message: error.message,
   };
@@ -101,6 +104,7 @@ function serializeErrorDetails(
 
 function isSerializedError(value: unknown): value is SerializedError {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+  if (!("__superformdataError" in value) || value.__superformdataError !== 1) return false;
   if (!("name" in value) || typeof value.name !== "string") return false;
   if (!("message" in value) || typeof value.message !== "string") return false;
   if (!("cause" in value)) return true;
