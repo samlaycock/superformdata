@@ -197,6 +197,22 @@ describe("type registry", () => {
     });
   });
 
+  test("custom type handlers can serialize invalid Dates", () => {
+    const invalidDateHandler: TypeHandler<Date> = {
+      id: "InvalidDateSentinel",
+      test: (value): value is Date => value instanceof Date,
+      serialize: (value) => (Number.isNaN(value.getTime()) ? "invalid" : value.toISOString()),
+      deserialize: (raw) => (raw === "invalid" ? new Date("not-a-date") : new Date(raw)),
+    };
+
+    expect(
+      encode({ publishedAt: new Date("not-a-date") }, { typeHandlers: [invalidDateHandler] }),
+    ).toEqual([
+      ["publishedAt", "invalid"],
+      ["$types", JSON.stringify({ publishedAt: "InvalidDateSentinel" })],
+    ]);
+  });
+
   test("custom type handlers decode explicitly typed entries", () => {
     expect(
       decode<{ price: Money }>(
