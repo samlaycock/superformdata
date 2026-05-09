@@ -69,17 +69,27 @@ function deserializeBoolean(raw: string): boolean {
   return invalidTypedValue("boolean");
 }
 
-function serializeErrorCause(cause: unknown): SerializedError | string {
-  if (cause instanceof Error) return serializeErrorDetails(cause);
+function serializeErrorCause(cause: unknown, seen: ReadonlySet<Error>): SerializedError | string {
+  if (cause instanceof Error) {
+    if (seen.has(cause)) return "[Circular Error cause]";
+    return serializeErrorDetails(cause, seen);
+  }
   return String(cause);
 }
 
-function serializeErrorDetails(error: Error): SerializedError {
-  if ("cause" in error) {
+function serializeErrorDetails(
+  error: Error,
+  seen: ReadonlySet<Error> = new Set(),
+): SerializedError {
+  const cause = error.cause;
+  if (cause !== undefined) {
+    const nextSeen = new Set(seen);
+    nextSeen.add(error);
+
     return {
       name: error.name,
       message: error.message,
-      cause: serializeErrorCause(error.cause),
+      cause: serializeErrorCause(cause, nextSeen),
     };
   }
 
