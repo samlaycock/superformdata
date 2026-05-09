@@ -23,6 +23,12 @@ const UNSAFE_OBJECT_KEYS = new Set(["__proto__", "prototype", "constructor"]);
 export type PathSegment = string | number;
 type PathContainer = Record<string | number, unknown>;
 
+export interface ParsedPathEntry {
+  readonly path: string;
+  readonly segments: readonly PathSegment[];
+  readonly value: unknown;
+}
+
 function assertSafePathSegment(segment: PathSegment, path: string): void {
   if (typeof segment === "number") return;
   if (!UNSAFE_OBJECT_KEYS.has(segment)) return;
@@ -147,16 +153,15 @@ export function parsePath(path: string): PathSegment[] {
   return segments;
 }
 
-export function unflatten(entries: [string, unknown][]): unknown {
+export function unflattenParsed(entries: readonly ParsedPathEntry[]): unknown {
   if (entries.length === 0) return {};
-  if (entries.length === 1 && entries[0]![0] === "") return entries[0]![1];
+  if (entries.length === 1 && entries[0]!.path === "") return entries[0]!.value;
 
-  const firstPath = entries[0]![0];
+  const firstPath = entries[0]!.path;
   const root = (firstPath.startsWith("[") ? [] : {}) as PathContainer;
   const containers = new WeakSet<object>([root]);
 
-  for (const [path, value] of entries) {
-    const segments = parsePath(path);
+  for (const { path, segments, value } of entries) {
     if (segments.length === 0) continue;
     for (const segment of segments) {
       assertSafePathSegment(segment, path);
@@ -190,4 +195,14 @@ export function unflatten(entries: [string, unknown][]): unknown {
   }
 
   return root;
+}
+
+export function unflatten(entries: [string, unknown][]): unknown {
+  return unflattenParsed(
+    entries.map(([path, value]) => ({
+      path,
+      segments: parsePath(path),
+      value,
+    })),
+  );
 }

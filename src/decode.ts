@@ -1,5 +1,13 @@
 import { DEFAULT_TYPES_KEY } from "./encode.ts";
-import { MAX_SPARSE_ARRAY_LENGTH, appendIndex, appendKey, parsePath, unflatten } from "./path.ts";
+import {
+  MAX_SPARSE_ARRAY_LENGTH,
+  appendIndex,
+  appendKey,
+  parsePath,
+  unflattenParsed,
+  type ParsedPathEntry,
+  type PathSegment,
+} from "./path.ts";
 import {
   createTypeRegistry,
   getHandler,
@@ -8,6 +16,12 @@ import {
 } from "./types.ts";
 
 const STRUCTURAL_TYPES = new Set(["set", "map", "array", "object"]);
+
+interface StructuralPath {
+  readonly path: string;
+  readonly segments: readonly PathSegment[];
+  readonly typeId: string;
+}
 
 export interface DecodeOptions {
   typesKey?: string;
@@ -50,82 +64,84 @@ export function decode<T = unknown>(
   }
 
   // Collect structural type paths and empty container paths
-  const structuralPaths: [string, string][] = [];
+  const structuralPaths: StructuralPath[] = [];
   for (const [path, typeId] of Object.entries(types)) {
     if (isStructuralType(typeId)) {
-      structuralPaths.push([path, typeId]);
+      structuralPaths.push({ path, segments: parsePath(path), typeId });
     }
   }
 
   // Deserialize leaf values
-  const deserialized: [string, unknown][] = [];
+  const deserialized: ParsedPathEntry[] = [];
   for (const [path, value] of raw) {
     const typeId = types[path];
+    const segments = parsePath(path);
     if (typeId && !isStructuralType(typeId)) {
       const handler = getHandler(typeId, registry)!;
       try {
-        deserialized.push([path, handler.deserialize(value)]);
+        deserialized.push({ path, segments, value: handler.deserialize(value) });
       } catch (error) {
         const reason = error instanceof Error ? error.message : `could not deserialize ${typeId}`;
         throw new TypeError(`Invalid value for typed field "${path}": ${reason}`);
       }
       continue;
     }
-    deserialized.push([path, value]);
+    deserialized.push({ path, segments, value });
   }
 
   // Build lookup sets once so empty-container reconstruction does not scan
   // all decoded entries for every structural metadata path.
   const entryPaths = new Set<string>();
-  for (const [p] of deserialized) entryPaths.add(p);
-  const parentPaths = buildParentPathSet(entryPaths);
+  for (const entry of deserialized) entryPaths.add(entry.path);
+  const parentPaths = buildParentPathSet(deserialized);
 
   // Add empty container markers
-  for (const [path, typeId] of structuralPaths) {
+  for (const { path, segments, typeId } of structuralPaths) {
     if (entryPaths.has(path)) continue;
     if (parentPaths.has(path)) continue;
 
     const sparseArrayLength = parseSparseArrayTypeId(typeId);
 
     if (typeId === "set") {
-      deserialized.push([path, new Set()]);
+      deserialized.push({ path, segments, value: new Set() });
     } else if (typeId === "map") {
-      deserialized.push([path, new Map()]);
+      deserialized.push({ path, segments, value: new Map() });
     } else if (typeId === "array" || sparseArrayLength !== undefined) {
-      deserialized.push([
+      deserialized.push({
         path,
-        sparseArrayLength === undefined ? [] : createSparseArray(sparseArrayLength),
-      ]);
+        segments,
+        value: sparseArrayLength === undefined ? [] : createSparseArray(sparseArrayLength),
+      });
     } else if (typeId === "object") {
-      deserialized.push([path, {}]);
+      deserialized.push({ path, segments, value: {} });
     }
   }
 
   // Unflatten into nested structure
-  let result = unflatten(deserialized);
+  let result = unflattenParsed(deserialized);
 
   const sortedSparseArrays = structuralPaths
-    .map(([path, typeId]): [string, number] | undefined => {
+    .map(({ path, segments, typeId }): [string, readonly PathSegment[], number] | undefined => {
       const length = parseSparseArrayTypeId(typeId);
-      return length === undefined ? undefined : [path, length];
+      return length === undefined ? undefined : [path, segments, length];
     })
-    .filter((item): item is [string, number] => item !== undefined)
+    .filter((item): item is [string, readonly PathSegment[], number] => item !== undefined)
     .sort((a, b) => b[0].length - a[0].length);
 
-  for (const [path, length] of sortedSparseArrays) {
+  for (const [path, segments, length] of sortedSparseArrays) {
     if (path === "") {
       if (Array.isArray(result)) result.length = length;
     } else {
-      resizeArray(result, path, length);
+      resizeArray(result, segments, length);
     }
   }
 
   // Post-process structural types (deepest-first)
   const sortedStructural = structuralPaths
-    .filter(([, t]) => t === "set" || t === "map")
-    .sort((a, b) => b[0].length - a[0].length);
+    .filter(({ typeId }) => typeId === "set" || typeId === "map")
+    .sort((a, b) => b.path.length - a.path.length);
 
-  for (const [path, typeId] of sortedStructural) {
+  for (const { path, segments, typeId } of sortedStructural) {
     if (path === "") {
       // Top-level structural type
       if (typeId === "set" && Array.isArray(result)) {
@@ -134,7 +150,7 @@ export function decode<T = unknown>(
         result = new Map(result as [unknown, unknown][]);
       }
     } else {
-      convertStructural(result, path, typeId);
+      convertStructural(result, segments, typeId);
     }
   }
 
@@ -189,11 +205,10 @@ function createSparseArray(length: number): unknown[] {
   return array;
 }
 
-function buildParentPathSet(paths: Set<string>): Set<string> {
+function buildParentPathSet(entries: readonly ParsedPathEntry[]): Set<string> {
   const parentPaths = new Set<string>();
 
-  for (const path of paths) {
-    const segments = parsePath(path);
+  for (const { segments } of entries) {
     if (segments.length === 0) continue;
 
     parentPaths.add("");
@@ -243,9 +258,7 @@ export async function decodeRequest<T = unknown>(
   );
 }
 
-function convertStructural(root: unknown, path: string, typeId: string): void {
-  const segments = parsePath(path);
-
+function convertStructural(root: unknown, segments: readonly PathSegment[], typeId: string): void {
   if (segments.length === 0) {
     // Can't convert root in-place; this shouldn't happen for structural types
     // at root level since unflatten returns the array/object directly
@@ -273,9 +286,7 @@ function convertStructural(root: unknown, path: string, typeId: string): void {
   }
 }
 
-function resizeArray(root: unknown, path: string, length: number): void {
-  const segments = parsePath(path);
-
+function resizeArray(root: unknown, segments: readonly PathSegment[], length: number): void {
   if (segments.length === 0) return;
 
   let current: Record<string | number, unknown> = root as Record<string | number, unknown>;

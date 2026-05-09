@@ -12,6 +12,7 @@ type RegisteredTypeHandler = TypeHandler<unknown>;
 export interface TypeRegistry {
   readonly handlers: readonly RegisteredTypeHandler[];
   readonly handlerMap: ReadonlyMap<string, RegisteredTypeHandler>;
+  readonly customHandlers: readonly RegisteredTypeHandler[];
 }
 
 interface SerializedError {
@@ -269,6 +270,7 @@ for (const handler of typeHandlers) {
 const builtInRegistry: TypeRegistry = {
   handlers: typeHandlers,
   handlerMap,
+  customHandlers: [],
 };
 
 export function createTypeRegistry(customHandlers?: TypeHandlerList): TypeRegistry {
@@ -297,7 +299,34 @@ export function createTypeRegistry(customHandlers?: TypeHandlerList): TypeRegist
   return {
     handlers: [...handlers, ...typeHandlers],
     handlerMap: customHandlerMap,
+    customHandlers: handlers,
   };
+}
+
+function findBuiltInHandler(value: unknown): RegisteredTypeHandler | undefined {
+  if (value === undefined) return handlerMap.get("undefined");
+  if (value === null) return handlerMap.get("null");
+
+  switch (typeof value) {
+    case "bigint":
+      return handlerMap.get("bigint");
+    case "boolean":
+      return handlerMap.get("boolean");
+    case "number":
+      if (Number.isNaN(value)) return handlerMap.get("nan");
+      if (value === Infinity) return handlerMap.get("infinity");
+      if (value === -Infinity) return handlerMap.get("-infinity");
+      if (Object.is(value, -0)) return handlerMap.get("-0");
+      return handlerMap.get("number");
+    case "string":
+      return undefined;
+    default:
+      if (value instanceof Date) return handlerMap.get("Date");
+      if (value instanceof RegExp) return handlerMap.get("RegExp");
+      if (value instanceof URL) return handlerMap.get("URL");
+      if (value instanceof Error) return handlerMap.get("Error");
+      return undefined;
+  }
 }
 
 export function findHandler(
@@ -305,7 +334,8 @@ export function findHandler(
   registry: TypeRegistry = builtInRegistry,
 ): RegisteredTypeHandler | undefined {
   if (typeof value === "string") return undefined;
-  return registry.handlers.find((h) => h.test(value));
+  if (registry.customHandlers.length > 0) return registry.handlers.find((h) => h.test(value));
+  return findBuiltInHandler(value);
 }
 
 export function getHandler(
