@@ -31,7 +31,12 @@ export function encode<T>(input: T, options?: EncodeOptions): [string, string][]
 
   // FormData
   if (typeof FormData !== "undefined" && input instanceof FormData) {
-    return encodeFormData(input, typesKey, options?.types);
+    return encodeStringEntries(input, typesKey, options?.types);
+  }
+
+  // URLSearchParams
+  if (typeof URLSearchParams !== "undefined" && input instanceof URLSearchParams) {
+    return encodeStringEntries(input, typesKey, options?.types);
   }
 
   // Plain value (existing behavior)
@@ -149,8 +154,8 @@ function encodeForm(
   return entries;
 }
 
-function encodeFormData(
-  data: FormData,
+function encodeStringEntries(
+  data: Iterable<[string, string | File]>,
   typesKey: string,
   explicitTypes?: Record<string, string>,
 ): [string, string][] {
