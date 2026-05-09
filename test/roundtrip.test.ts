@@ -194,6 +194,15 @@ describe("encode/decode round-trip", () => {
     expect(2 in result).toBe(false);
   });
 
+  test("oversized sparse array throws before emitting undecodable metadata", () => {
+    const input = ["x"] as unknown[];
+    input.length = 100_001;
+
+    expect(() => encode(input)).toThrow(
+      new TypeError('Sparse array length too large at path "": 100001'),
+    );
+  });
+
   test("top-level Set", () => {
     const input = new Set(["a", "b", "c"]);
     const result = roundtrip(input);

@@ -1,5 +1,5 @@
 import { DEFAULT_TYPES_KEY } from "./encode.ts";
-import { appendIndex, appendKey, parsePath, unflatten } from "./path.ts";
+import { MAX_SPARSE_ARRAY_LENGTH, appendIndex, appendKey, parsePath, unflatten } from "./path.ts";
 import {
   createTypeRegistry,
   getHandler,
@@ -8,7 +8,6 @@ import {
 } from "./types.ts";
 
 const STRUCTURAL_TYPES = new Set(["set", "map", "array", "object"]);
-const MAX_ARRAY_LENGTH = 100_000;
 
 export interface DecodeOptions {
   typesKey?: string;
@@ -179,7 +178,7 @@ function parseSparseArrayTypeId(typeId: string): number | undefined {
   if (!/^(?:0|[1-9]\d*)$/.test(rawLength)) return undefined;
 
   const length = Number(rawLength);
-  if (!Number.isSafeInteger(length) || length > MAX_ARRAY_LENGTH) return undefined;
+  if (!Number.isSafeInteger(length) || length > MAX_SPARSE_ARRAY_LENGTH) return undefined;
 
   return length;
 }

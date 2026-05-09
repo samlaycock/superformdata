@@ -1,4 +1,4 @@
-import { appendIndex, appendKey } from "./path.ts";
+import { MAX_SPARSE_ARRAY_LENGTH, appendIndex, appendKey } from "./path.ts";
 import { createTypeRegistry, findHandler, type TypeHandlerList } from "./types.ts";
 
 export const DEFAULT_TYPES_KEY = "$types";
@@ -238,6 +238,9 @@ function walk(
     }
     for (let i = 0; i < value.length; i++) {
       if (!(i in value)) {
+        if (value.length > MAX_SPARSE_ARRAY_LENGTH) {
+          throw new TypeError(`Sparse array length too large at path "${path}": ${value.length}`);
+        }
         types[path] = `array:${value.length}`;
         continue;
       }
