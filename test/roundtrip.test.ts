@@ -280,6 +280,16 @@ describe("encode/decode round-trip", () => {
     ]);
   });
 
+  test("URLSearchParams explicit types override existing metadata", () => {
+    const params = new URLSearchParams("count=42");
+    params.set("$types", JSON.stringify({ count: "number" }));
+
+    expect(encode(params, { types: { count: "bigint" } })).toEqual([
+      ["count", "42"],
+      ["$types", JSON.stringify({ count: "bigint" })],
+    ]);
+  });
+
   test("nested invalid Date throws path-aware TypeError", () => {
     expect(() => encode({ post: { publishedAt: new Date("not-a-date") } })).toThrow(
       new TypeError('Invalid Date at path "post.publishedAt"'),
