@@ -59,10 +59,7 @@ function isSubmitButton(el: Element): boolean {
 }
 
 function isInsideFirstLegend(element: Element, fieldset: HTMLFieldSetElement): boolean {
-  const firstLegend = Array.from(fieldset.children).find(
-    (child): child is HTMLLegendElement => child instanceof HTMLLegendElement,
-  );
-
+  const firstLegend = fieldset.querySelector(":scope > legend");
   return firstLegend?.contains(element) ?? false;
 }
 
