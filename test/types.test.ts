@@ -78,7 +78,7 @@ describe("type registry", () => {
     ["Date", new Date("2024-01-01T00:00:00.000Z"), "2024-01-01T00:00:00.000Z"],
     ["RegExp", /foo/gi, "/foo/gi"],
     ["URL", new URL("https://example.com/path"), "https://example.com/path"],
-    ["Error", new Error("oops"), "oops"],
+    ["Error", new Error("oops"), JSON.stringify({ name: "Error", message: "oops" })],
     ["number", 42, "42"],
     ["number", 3.14, "3.14"],
     ["boolean", true, "true"],
@@ -128,6 +128,31 @@ describe("type registry", () => {
     } else {
       expect(result).toEqual(expected);
     }
+  });
+
+  test("Error deserializes structured details", () => {
+    const handler = getHandler("Error")!;
+    const result = handler.deserialize(
+      JSON.stringify({
+        name: "TypeError",
+        message: "bad input",
+        cause: { name: "Error", message: "root cause" },
+      }),
+    ) as Error;
+
+    expect(result.name).toBe("TypeError");
+    expect(result.message).toBe("bad input");
+    expect(result.cause).toBeInstanceOf(Error);
+    expect((result.cause as Error).name).toBe("Error");
+    expect((result.cause as Error).message).toBe("root cause");
+  });
+
+  test("Error deserializes legacy message strings", () => {
+    const handler = getHandler("Error")!;
+    const result = handler.deserialize("oops") as Error;
+
+    expect(result.name).toBe("Error");
+    expect(result.message).toBe("oops");
   });
 
   test("RegExp with special characters", () => {
