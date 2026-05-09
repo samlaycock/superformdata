@@ -58,6 +58,24 @@ function isSubmitButton(el: Element): boolean {
   return false;
 }
 
+function isInsideFirstLegend(element: Element, fieldset: HTMLFieldSetElement): boolean {
+  const firstLegend = Array.from(fieldset.children).find(
+    (child): child is HTMLLegendElement => child instanceof HTMLLegendElement,
+  );
+
+  return firstLegend?.contains(element) ?? false;
+}
+
+function isDisabledByFieldset(element: Element): boolean {
+  for (let parent = element.parentElement; parent; parent = parent.parentElement) {
+    if (!(parent instanceof HTMLFieldSetElement) || !parent.disabled) continue;
+    const fieldset = parent;
+    if (!isInsideFirstLegend(element, fieldset)) return true;
+  }
+
+  return false;
+}
+
 function encodeForm(
   form: HTMLFormElement,
   typesKey: string,
@@ -69,7 +87,7 @@ function encodeForm(
 
   for (const element of form.elements) {
     const el = element as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
-    if (!el.name || el.disabled) continue;
+    if (!el.name || el.disabled || isDisabledByFieldset(el)) continue;
     if (el.name === typesKey) continue;
 
     // Buttons are only successful controls when they are the submitter

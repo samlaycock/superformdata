@@ -264,6 +264,23 @@ describe("encode(form)", () => {
     expect(entries).toEqual([["name", "Alice"]]);
   });
 
+  test("skips controls in disabled fieldsets except controls in the first legend", () => {
+    const form = createForm(
+      "<fieldset disabled>" +
+        '<legend><input name="legend" value="included" /></legend>' +
+        '<input name="secret" value="x" />' +
+        '<legend><input name="secondLegend" value="excluded" /></legend>' +
+        "</fieldset>" +
+        '<input name="name" value="Alice" />',
+    );
+    const entries = encode(form);
+
+    expect(entries).toEqual([
+      ["legend", "included"],
+      ["name", "Alice"],
+    ]);
+  });
+
   test("handles radio buttons (only checked)", () => {
     const form = createForm(
       '<input name="color" type="radio" value="red" />' +
