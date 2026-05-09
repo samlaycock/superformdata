@@ -308,6 +308,21 @@ describe("type registry", () => {
     ]);
   });
 
+  test("custom type handlers keep priority over built-in primitive handlers", () => {
+    const integerHandler: TypeHandler<number> = {
+      id: "Integer",
+      test: (value): value is number => Number.isInteger(value),
+      serialize: (value) => String(value),
+      deserialize: (raw) => Number(raw),
+    };
+
+    expect(encode({ count: 42, ratio: 3.14 }, { typeHandlers: [integerHandler] })).toEqual([
+      ["count", "42"],
+      ["ratio", "3.14"],
+      ["$types", JSON.stringify({ count: "Integer", ratio: "number" })],
+    ]);
+  });
+
   test("custom type handlers decode explicitly typed entries", () => {
     expect(
       decode<{ price: Money }>(
