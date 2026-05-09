@@ -126,6 +126,23 @@ describe("encode/decode round-trip", () => {
     expect((result.err.cause as Error).message).toBe("root cause");
   });
 
+  test("Error with undefined cause does not create string cause", () => {
+    const result = roundtrip(new Error("missing cause", { cause: undefined })) as Error;
+
+    expect(result.message).toBe("missing cause");
+    expect(result.cause).toBeUndefined();
+  });
+
+  test("Error with circular cause serializes without stack overflow", () => {
+    const input = new Error("recursive");
+    input.cause = input;
+
+    const result = roundtrip(input) as Error;
+
+    expect(result.message).toBe("recursive");
+    expect(result.cause).toBe("[Circular Error cause]");
+  });
+
   test("special numbers", () => {
     const input = { a: NaN, b: Infinity, c: -Infinity, d: -0 };
     const result = roundtrip(input) as Record<string, number>;

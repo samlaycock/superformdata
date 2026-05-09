@@ -155,6 +155,27 @@ describe("type registry", () => {
     expect(result.message).toBe("oops");
   });
 
+  test("Error omits undefined cause while serializing", () => {
+    const handler = getHandler("Error")!;
+    const serialized = handler.serialize(new Error("oops", { cause: undefined }));
+
+    expect(serialized).toBe(JSON.stringify({ name: "Error", message: "oops" }));
+  });
+
+  test("Error serializes circular cause as a safe marker", () => {
+    const handler = getHandler("Error")!;
+    const error = new Error("recursive");
+    error.cause = error;
+
+    expect(handler.serialize(error)).toBe(
+      JSON.stringify({
+        name: "Error",
+        message: "recursive",
+        cause: "[Circular Error cause]",
+      }),
+    );
+  });
+
   test("RegExp with special characters", () => {
     const handler = getHandler("RegExp")!;
     const regex = /^a\/b\d+$/i;
