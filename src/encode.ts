@@ -230,6 +230,9 @@ function walk(
 
   const handler = findHandler(value, registry);
   if (handler) {
+    if (value instanceof Date && Number.isNaN(value.getTime())) {
+      throw new TypeError(`Invalid Date at path "${path}"`);
+    }
     entries.push([path, handler.serialize(value)]);
     types[path] = handler.id;
     return;
