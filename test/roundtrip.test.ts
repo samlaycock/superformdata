@@ -211,6 +211,16 @@ describe("encode/decode round-trip", () => {
     expect(result.toISOString()).toBe("2024-01-01T00:00:00.000Z");
   });
 
+  test("top-level invalid Date throws path-aware TypeError", () => {
+    expect(() => encode(new Date("not-a-date"))).toThrow(new TypeError('Invalid Date at path ""'));
+  });
+
+  test("nested invalid Date throws path-aware TypeError", () => {
+    expect(() => encode({ post: { publishedAt: new Date("not-a-date") } })).toThrow(
+      new TypeError('Invalid Date at path "post.publishedAt"'),
+    );
+  });
+
   test("top-level boolean", () => {
     expect(roundtrip(true)).toBe(true);
     expect(roundtrip(false)).toBe(false);
