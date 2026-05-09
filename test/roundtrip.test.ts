@@ -248,6 +248,38 @@ describe("encode/decode round-trip", () => {
     expect(() => encode(new Date("not-a-date"))).toThrow(new TypeError('Invalid Date at path ""'));
   });
 
+  test("URLSearchParams encode as form-style entries", () => {
+    expect(encode(new URLSearchParams("name=Alice&count=42&tag=a&tag=b"))).toEqual([
+      ["name", "Alice"],
+      ["count", "42"],
+      ["tag", "a"],
+      ["tag", "b"],
+    ]);
+  });
+
+  test("URLSearchParams encode applies explicit types metadata", () => {
+    expect(
+      encode(new URLSearchParams("name=Alice&count=42"), {
+        types: { count: "number" },
+      }),
+    ).toEqual([
+      ["name", "Alice"],
+      ["count", "42"],
+      ["$types", JSON.stringify({ count: "number" })],
+    ]);
+  });
+
+  test("URLSearchParams encode merges existing and explicit types metadata", () => {
+    const params = new URLSearchParams("count=42&active=true");
+    params.set("$types", JSON.stringify({ count: "number" }));
+
+    expect(encode(params, { types: { active: "boolean" } })).toEqual([
+      ["count", "42"],
+      ["active", "true"],
+      ["$types", JSON.stringify({ count: "number", active: "boolean" })],
+    ]);
+  });
+
   test("nested invalid Date throws path-aware TypeError", () => {
     expect(() => encode({ post: { publishedAt: new Date("not-a-date") } })).toThrow(
       new TypeError('Invalid Date at path "post.publishedAt"'),
