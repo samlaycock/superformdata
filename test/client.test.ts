@@ -281,6 +281,45 @@ describe("encode(form)", () => {
     ]);
   });
 
+  test("skips controls in nested fieldsets inside disabled fieldset bodies", () => {
+    const form = createForm(
+      "<fieldset disabled>" +
+        '<legend><input name="outerLegend" value="included" /></legend>' +
+        "<fieldset>" +
+        '<legend><input name="innerLegend" value="excluded" /></legend>' +
+        '<input name="innerBody" value="excluded" />' +
+        "</fieldset>" +
+        "</fieldset>" +
+        '<input name="name" value="Alice" />',
+    );
+    const entries = encode(form);
+
+    expect(entries).toEqual([
+      ["outerLegend", "included"],
+      ["name", "Alice"],
+    ]);
+  });
+
+  test("preserves first-legend exceptions across nested disabled fieldsets", () => {
+    const form = createForm(
+      "<fieldset disabled>" +
+        "<legend>" +
+        '<input name="outerLegend" value="included" />' +
+        "<fieldset disabled>" +
+        '<legend><input name="innerLegend" value="included" /></legend>' +
+        '<input name="innerBody" value="excluded" />' +
+        "</fieldset>" +
+        "</legend>" +
+        "</fieldset>",
+    );
+    const entries = encode(form);
+
+    expect(entries).toEqual([
+      ["outerLegend", "included"],
+      ["innerLegend", "included"],
+    ]);
+  });
+
   test("handles radio buttons (only checked)", () => {
     const form = createForm(
       '<input name="color" type="radio" value="red" />' +
