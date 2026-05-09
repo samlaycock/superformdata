@@ -78,7 +78,11 @@ describe("type registry", () => {
     ["Date", new Date("2024-01-01T00:00:00.000Z"), "2024-01-01T00:00:00.000Z"],
     ["RegExp", /foo/gi, "/foo/gi"],
     ["URL", new URL("https://example.com/path"), "https://example.com/path"],
-    ["Error", new Error("oops"), JSON.stringify({ name: "Error", message: "oops" })],
+    [
+      "Error",
+      new Error("oops"),
+      JSON.stringify({ __superformdataError: 1, name: "Error", message: "oops" }),
+    ],
     ["number", 42, "42"],
     ["number", 3.14, "3.14"],
     ["boolean", true, "true"],
@@ -134,9 +138,10 @@ describe("type registry", () => {
     const handler = getHandler("Error")!;
     const result = handler.deserialize(
       JSON.stringify({
+        __superformdataError: 1,
         name: "TypeError",
         message: "bad input",
-        cause: { name: "Error", message: "root cause" },
+        cause: { __superformdataError: 1, name: "Error", message: "root cause" },
       }),
     ) as Error;
 
@@ -155,11 +160,22 @@ describe("type registry", () => {
     expect(result.message).toBe("oops");
   });
 
+  test("Error preserves legacy JSON-shaped message strings", () => {
+    const handler = getHandler("Error")!;
+    const legacyMessage = JSON.stringify({ name: "CustomError", message: "details" });
+    const result = handler.deserialize(legacyMessage) as Error;
+
+    expect(result.name).toBe("Error");
+    expect(result.message).toBe(legacyMessage);
+  });
+
   test("Error omits undefined cause while serializing", () => {
     const handler = getHandler("Error")!;
     const serialized = handler.serialize(new Error("oops", { cause: undefined }));
 
-    expect(serialized).toBe(JSON.stringify({ name: "Error", message: "oops" }));
+    expect(serialized).toBe(
+      JSON.stringify({ __superformdataError: 1, name: "Error", message: "oops" }),
+    );
   });
 
   test("Error serializes circular cause as a safe marker", () => {
@@ -169,6 +185,7 @@ describe("type registry", () => {
 
     expect(handler.serialize(error)).toBe(
       JSON.stringify({
+        __superformdataError: 1,
         name: "Error",
         message: "recursive",
         cause: "[Circular Error cause]",
