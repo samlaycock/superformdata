@@ -111,6 +111,21 @@ describe("encode/decode round-trip", () => {
     expect(result.err.message).toBe("something went wrong");
   });
 
+  test("Error preserves name and cause details", () => {
+    const input = {
+      err: new TypeError("bad input", { cause: new Error("root cause") }),
+    };
+
+    const result = roundtrip(input) as { err: Error };
+
+    expect(result.err).toBeInstanceOf(Error);
+    expect(result.err.name).toBe("TypeError");
+    expect(result.err.message).toBe("bad input");
+    expect(result.err.cause).toBeInstanceOf(Error);
+    expect((result.err.cause as Error).name).toBe("Error");
+    expect((result.err.cause as Error).message).toBe("root cause");
+  });
+
   test("special numbers", () => {
     const input = { a: NaN, b: Infinity, c: -Infinity, d: -0 };
     const result = roundtrip(input) as Record<string, number>;

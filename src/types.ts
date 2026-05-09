@@ -14,6 +14,12 @@ export interface TypeRegistry {
   readonly handlerMap: ReadonlyMap<string, RegisteredTypeHandler>;
 }
 
+interface SerializedError {
+  readonly name: string;
+  readonly message: string;
+  readonly cause?: SerializedError | string;
+}
+
 const NUMBER_PATTERN = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/;
 const RESERVED_TYPE_IDS = new Set(["set", "map", "array", "object"]);
 
@@ -61,6 +67,60 @@ function deserializeBoolean(raw: string): boolean {
   if (raw === "true") return true;
   if (raw === "false") return false;
   return invalidTypedValue("boolean");
+}
+
+function serializeErrorCause(cause: unknown): SerializedError | string {
+  if (cause instanceof Error) return serializeErrorDetails(cause);
+  return String(cause);
+}
+
+function serializeErrorDetails(error: Error): SerializedError {
+  if ("cause" in error) {
+    return {
+      name: error.name,
+      message: error.message,
+      cause: serializeErrorCause(error.cause),
+    };
+  }
+
+  return {
+    name: error.name,
+    message: error.message,
+  };
+}
+
+function isSerializedError(value: unknown): value is SerializedError {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+  if (!("name" in value) || typeof value.name !== "string") return false;
+  if (!("message" in value) || typeof value.message !== "string") return false;
+  if (!("cause" in value)) return true;
+  return typeof value.cause === "string" || isSerializedError(value.cause);
+}
+
+function deserializeErrorCause(cause: SerializedError | string): Error | string {
+  if (typeof cause === "string") return cause;
+  return deserializeErrorDetails(cause);
+}
+
+function deserializeErrorDetails(details: SerializedError): Error {
+  const cause = details.cause;
+  const error =
+    cause === undefined
+      ? new Error(details.message)
+      : new Error(details.message, { cause: deserializeErrorCause(cause) });
+  error.name = details.name;
+  return error;
+}
+
+function deserializeError(raw: string): Error {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (isSerializedError(parsed)) return deserializeErrorDetails(parsed);
+  } catch {
+    // Legacy Error values were encoded as plain message strings.
+  }
+
+  return new Error(raw);
 }
 
 export const typeHandlers: RegisteredTypeHandler[] = [
@@ -121,8 +181,8 @@ export const typeHandlers: RegisteredTypeHandler[] = [
   defineTypeHandler({
     id: "Error",
     test: (v): v is Error => v instanceof Error,
-    serialize: (v) => v.message,
-    deserialize: (s) => new Error(s),
+    serialize: (v) => JSON.stringify(serializeErrorDetails(v)),
+    deserialize: deserializeError,
   }),
   defineTypeHandler({
     id: "number",
