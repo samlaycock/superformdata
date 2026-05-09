@@ -18,7 +18,18 @@ interface SerializedError {
   readonly __superformdataError: 1;
   readonly name: string;
   readonly message: string;
-  readonly cause?: SerializedError | string;
+  readonly cause?: SerializedError | SerializedErrorCause;
+}
+
+interface SerializedErrorCause {
+  readonly __superformdataErrorCause: 1;
+  readonly value: JsonValue;
+}
+
+type JsonValue = null | boolean | number | string | readonly JsonValue[] | JsonObject;
+
+interface JsonObject {
+  readonly [key: string]: JsonValue;
 }
 
 const NUMBER_PATTERN = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/;
@@ -70,11 +81,34 @@ function deserializeBoolean(raw: string): boolean {
   return invalidTypedValue("boolean");
 }
 
-function serializeErrorCause(cause: unknown, seen: ReadonlySet<Error>): SerializedError | string {
+function serializeErrorCause(
+  cause: unknown,
+  seen: ReadonlySet<Error>,
+): SerializedError | SerializedErrorCause {
   if (cause instanceof Error) {
-    if (seen.has(cause)) return "[Circular Error cause]";
+    if (seen.has(cause)) {
+      return {
+        __superformdataErrorCause: 1,
+        value: "[Circular Error cause]",
+      };
+    }
     return serializeErrorDetails(cause, seen);
   }
+
+  return {
+    __superformdataErrorCause: 1,
+    value: toJsonErrorCause(cause),
+  };
+}
+
+function toJsonErrorCause(cause: unknown): JsonValue {
+  try {
+    const json = JSON.stringify(cause);
+    if (json !== undefined) return JSON.parse(json) as JsonValue;
+  } catch {
+    // Non-JSON causes still get a stable diagnostic representation.
+  }
+
   return String(cause);
 }
 
@@ -108,11 +142,19 @@ function isSerializedError(value: unknown): value is SerializedError {
   if (!("name" in value) || typeof value.name !== "string") return false;
   if (!("message" in value) || typeof value.message !== "string") return false;
   if (!("cause" in value)) return true;
-  return typeof value.cause === "string" || isSerializedError(value.cause);
+  return isSerializedError(value.cause) || isSerializedErrorCause(value.cause);
 }
 
-function deserializeErrorCause(cause: SerializedError | string): Error | string {
-  if (typeof cause === "string") return cause;
+function isSerializedErrorCause(value: unknown): value is SerializedErrorCause {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+  if (!("__superformdataErrorCause" in value) || value.__superformdataErrorCause !== 1) {
+    return false;
+  }
+  return "value" in value;
+}
+
+function deserializeErrorCause(cause: SerializedError | SerializedErrorCause): Error | JsonValue {
+  if (isSerializedErrorCause(cause)) return cause.value;
   return deserializeErrorDetails(cause);
 }
 

@@ -143,6 +143,18 @@ describe("encode/decode round-trip", () => {
     expect(result.cause).toBe("[Circular Error cause]");
   });
 
+  test("Error preserves JSON-compatible non-Error cause values", () => {
+    const nullCause = roundtrip(new Error("null cause", { cause: null })) as Error;
+    const numberCause = roundtrip(new Error("number cause", { cause: 42 })) as Error;
+    const objectCause = roundtrip(
+      new Error("object cause", { cause: { code: "E_TEST", retryable: false } }),
+    ) as Error;
+
+    expect(nullCause.cause).toBeNull();
+    expect(numberCause.cause).toBe(42);
+    expect(objectCause.cause).toEqual({ code: "E_TEST", retryable: false });
+  });
+
   test("special numbers", () => {
     const input = { a: NaN, b: Infinity, c: -Infinity, d: -0 };
     const result = roundtrip(input) as Record<string, number>;

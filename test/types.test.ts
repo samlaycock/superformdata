@@ -188,7 +188,39 @@ describe("type registry", () => {
         __superformdataError: 1,
         name: "Error",
         message: "recursive",
-        cause: "[Circular Error cause]",
+        cause: {
+          __superformdataErrorCause: 1,
+          value: "[Circular Error cause]",
+        },
+      }),
+    );
+  });
+
+  test("Error serializes non-Error causes without string coercion", () => {
+    const handler = getHandler("Error")!;
+
+    expect(handler.serialize(new Error("null cause", { cause: null }))).toBe(
+      JSON.stringify({
+        __superformdataError: 1,
+        name: "Error",
+        message: "null cause",
+        cause: { __superformdataErrorCause: 1, value: null },
+      }),
+    );
+    expect(handler.serialize(new Error("number cause", { cause: 42 }))).toBe(
+      JSON.stringify({
+        __superformdataError: 1,
+        name: "Error",
+        message: "number cause",
+        cause: { __superformdataErrorCause: 1, value: 42 },
+      }),
+    );
+    expect(handler.serialize(new Error("object cause", { cause: { code: "E_TEST" } }))).toBe(
+      JSON.stringify({
+        __superformdataError: 1,
+        name: "Error",
+        message: "object cause",
+        cause: { __superformdataErrorCause: 1, value: { code: "E_TEST" } },
       }),
     );
   });
