@@ -237,6 +237,10 @@ function walk(
       return;
     }
     for (let i = 0; i < value.length; i++) {
+      if (!(i in value)) {
+        types[path] = `array:${value.length}`;
+        continue;
+      }
       walk(value[i], appendIndex(path, i), entries, types, seen, registry);
     }
     seen.delete(value);

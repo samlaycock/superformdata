@@ -170,6 +170,30 @@ describe("encode/decode round-trip", () => {
     expect(roundtrip(input)).toEqual(input);
   });
 
+  test("top-level sparse array preserves holes", () => {
+    const input: unknown[] = [];
+    input[2] = "x";
+
+    const result = roundtrip(input) as unknown[];
+
+    expect(result).toHaveLength(3);
+    expect(0 in result).toBe(false);
+    expect(1 in result).toBe(false);
+    expect(result[2]).toBe("x");
+  });
+
+  test("top-level sparse array preserves trailing holes", () => {
+    const input = ["x"] as unknown[];
+    input.length = 3;
+
+    const result = roundtrip(input) as unknown[];
+
+    expect(result).toHaveLength(3);
+    expect(result[0]).toBe("x");
+    expect(1 in result).toBe(false);
+    expect(2 in result).toBe(false);
+  });
+
   test("top-level Set", () => {
     const input = new Set(["a", "b", "c"]);
     const result = roundtrip(input);
@@ -234,6 +258,21 @@ describe("encode/decode round-trip", () => {
       ],
     };
     expect(roundtrip(input)).toEqual(input);
+  });
+
+  test("nested sparse arrays preserve holes", () => {
+    const input = {
+      items: [] as unknown[],
+    };
+    input.items[1] = "x";
+    input.items.length = 3;
+
+    const result = roundtrip(input) as { items: unknown[] };
+
+    expect(result.items).toHaveLength(3);
+    expect(0 in result.items).toBe(false);
+    expect(result.items[1]).toBe("x");
+    expect(2 in result.items).toBe(false);
   });
 
   test("array of mixed types", () => {
