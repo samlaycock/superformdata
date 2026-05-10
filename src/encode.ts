@@ -63,6 +63,17 @@ function isSubmitButton(el: Element): boolean {
   return false;
 }
 
+function isSubmittableFormControl(
+  element: Element,
+): element is HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | HTMLButtonElement {
+  return (
+    element instanceof HTMLInputElement ||
+    element instanceof HTMLSelectElement ||
+    element instanceof HTMLTextAreaElement ||
+    element instanceof HTMLButtonElement
+  );
+}
+
 function isInsideFirstLegend(element: Element, fieldset: HTMLFieldSetElement): boolean {
   const firstLegend = fieldset.querySelector(":scope > legend");
   return firstLegend?.contains(element) ?? false;
@@ -88,7 +99,9 @@ function encodeForm(
   const types: Record<string, string> = { ...explicitTypes };
 
   for (const element of form.elements) {
-    const el = element as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+    if (!isSubmittableFormControl(element)) continue;
+    const el = element;
+
     if (!el.name || el.disabled || isDisabledByFieldset(el)) continue;
     if (el.name === typesKey) continue;
 
@@ -105,6 +118,10 @@ function encodeForm(
       if (el === submitter) {
         entries.push([el.name, el.value]);
       }
+      continue;
+    }
+
+    if (el instanceof HTMLInputElement && (el.type === "button" || el.type === "reset")) {
       continue;
     }
 
