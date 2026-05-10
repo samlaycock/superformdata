@@ -198,6 +198,11 @@ describe("encode/decode round-trip", () => {
     expect(roundtrip(input)).toEqual(input);
   });
 
+  test("empty string object key with array value", () => {
+    const input = { "": [1, 2], parent: { "": [3, 4] } };
+    expect(roundtrip(input)).toEqual(input);
+  });
+
   test("deeply nested mixed types", () => {
     const input = {
       users: [

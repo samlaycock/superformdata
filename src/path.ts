@@ -135,7 +135,7 @@ export function parsePath(path: string): PathSegment[] {
       hasCurrentSegment = false;
       i++;
     } else if (path[i] === "[") {
-      if (current !== "" || (segments.length === 0 && i > 0)) {
+      if (current !== "" || hasCurrentSegment || (segments.length === 0 && i > 0)) {
         segments.push(current);
         current = "";
         hasCurrentSegment = false;
