@@ -264,6 +264,20 @@ describe("encode(form)", () => {
     expect(entries).toEqual([["name", "Alice"]]);
   });
 
+  test("skips listed elements that are not successful controls", () => {
+    const form = createForm(
+      '<fieldset name="group"><input name="x" value="1" /></fieldset>' +
+        '<output name="result">42</output>' +
+        '<object name="plugin"></object>' +
+        '<input name="noop" type="button" value="ignored" />' +
+        '<input name="reset" type="reset" value="ignored" />',
+    );
+    const entries = encode(form);
+
+    expect(entries).toEqual([["x", "1"]]);
+    expect(entries.every(([, value]) => typeof value === "string")).toBe(true);
+  });
+
   test("skips controls in disabled fieldsets except controls in the first legend", () => {
     const form = createForm(
       "<fieldset disabled>" +
