@@ -183,6 +183,21 @@ describe("encode/decode round-trip", () => {
     expect(roundtrip(input)).toEqual(input);
   });
 
+  test("top-level empty string object key", () => {
+    const input = { "": "x" };
+    expect(roundtrip(input)).toEqual(input);
+  });
+
+  test("nested empty string object key", () => {
+    const input = { user: { "": "x" } };
+    expect(roundtrip(input)).toEqual(input);
+  });
+
+  test("mixed empty string object keys with siblings", () => {
+    const input = { "": "root", user: { "": "nested", name: "Alice" }, value: "sibling" };
+    expect(roundtrip(input)).toEqual(input);
+  });
+
   test("deeply nested mixed types", () => {
     const input = {
       users: [
