@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { decode, decodeRequest, encode, type TypeHandler } from "../src/index.ts";
-import { findHandler, getHandler } from "../src/types.ts";
+import { findHandler, getHandler, typeHandlers } from "../src/types.ts";
 
 type Assert<T extends true> = T;
 type Equal<A, B> =
@@ -66,6 +66,33 @@ const moneyHandler: TypeHandler<Money> = {
 describe("type registry", () => {
   test("findHandler returns undefined for strings", () => {
     expect(findHandler("hello")).toBeUndefined();
+  });
+
+  test("built-in handler fast path stays in sync with the canonical handler scan", () => {
+    const values = [
+      undefined,
+      NaN,
+      Infinity,
+      -Infinity,
+      -0,
+      42n,
+      new Date("2024-01-01T00:00:00.000Z"),
+      /foo/gi,
+      new URL("https://example.com/path"),
+      new Error("oops"),
+      42,
+      3.14,
+      true,
+      false,
+      null,
+      "hello",
+      {},
+      [],
+    ];
+
+    for (const value of values) {
+      expect(findHandler(value)?.id).toBe(typeHandlers.find((handler) => handler.test(value))?.id);
+    }
   });
 
   test.each([
