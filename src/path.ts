@@ -1,8 +1,10 @@
 export function escapeKey(key: string): string {
+  if (key === "") return "\\0";
   return key.replace(/[.[\]\\]/g, "\\$&");
 }
 
 export function unescapeKey(escaped: string): string {
+  if (escaped === "\\0") return "";
   return escaped.replace(/\\(.)/g, "$1");
 }
 
@@ -112,31 +114,37 @@ export function parsePath(path: string): PathSegment[] {
 
   const segments: PathSegment[] = [];
   let current = "";
+  let hasCurrentSegment = false;
   let i = 0;
 
   while (i < path.length) {
     if (path[i] === "\\") {
       if (i + 1 < path.length) {
-        current += path[i + 1];
+        current += path[i + 1] === "0" ? "" : path[i + 1];
+        hasCurrentSegment = true;
         i += 2;
       } else {
         // Trailing backslash — treat as literal
         current += "\\";
+        hasCurrentSegment = true;
         i++;
       }
     } else if (path[i] === ".") {
       segments.push(current);
       current = "";
+      hasCurrentSegment = false;
       i++;
     } else if (path[i] === "[") {
       if (current !== "" || (segments.length === 0 && i > 0)) {
         segments.push(current);
         current = "";
+        hasCurrentSegment = false;
       }
       const close = path.indexOf("]", i);
       if (close === -1) {
         // Malformed bracket — treat rest as literal
         current += path.slice(i);
+        hasCurrentSegment = true;
         break;
       }
       segments.push(parseArrayIndex(path.slice(i + 1, close), path));
@@ -145,11 +153,12 @@ export function parsePath(path: string): PathSegment[] {
       if (path[i] === ".") i++;
     } else {
       current += path[i];
+      hasCurrentSegment = true;
       i++;
     }
   }
 
-  if (current !== "" || segments.length === 0) segments.push(current);
+  if (hasCurrentSegment || segments.length === 0) segments.push(current);
   return segments;
 }
 

@@ -39,6 +39,11 @@ describe("appendKey / appendIndex", () => {
     expect(appendKey("", "name")).toBe("name");
   });
 
+  test("appendKey preserves empty string key", () => {
+    expect(appendKey("", "")).toBe("\\0");
+    expect(appendKey("user", "")).toBe("user.\\0");
+  });
+
   test("appendKey to existing path", () => {
     expect(appendKey("user", "name")).toBe("user.name");
   });
@@ -119,6 +124,11 @@ describe("parsePath", () => {
 
   test("empty string key (a..b)", () => {
     expect(parsePath("a..b")).toEqual(["a", "", "b"]);
+  });
+
+  test("escaped empty string key", () => {
+    expect(parsePath("\\0")).toEqual([""]);
+    expect(parsePath("user.\\0")).toEqual(["user", ""]);
   });
 
   test("leading dot (.name)", () => {
