@@ -304,6 +304,7 @@ export function createTypeRegistry(customHandlers?: TypeHandlerList): TypeRegist
 }
 
 function findBuiltInHandler(value: unknown): RegisteredTypeHandler | undefined {
+  // Keep this fast-path in sync with typeHandlers; tests compare it against the canonical scan.
   if (value === undefined) return handlerMap.get("undefined");
   if (value === null) return handlerMap.get("null");
 
