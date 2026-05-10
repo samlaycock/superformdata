@@ -27,7 +27,7 @@ describe("escapeKey / unescapeKey", () => {
   });
 
   test("round-trip", () => {
-    const keys = ["simple", "a.b.c", "x[0]", "a\\b", "complex.key[1]\\end"];
+    const keys = ["", "simple", "a.b.c", "x[0]", "a\\b", "complex.key[1]\\end"];
     for (const key of keys) {
       expect(unescapeKey(escapeKey(key))).toBe(key);
     }
@@ -129,6 +129,11 @@ describe("parsePath", () => {
   test("escaped empty string key", () => {
     expect(parsePath("\\0")).toEqual([""]);
     expect(parsePath("user.\\0")).toEqual(["user", ""]);
+  });
+
+  test("escaped empty string key before array index", () => {
+    expect(parsePath("\\0[0]")).toEqual(["", 0]);
+    expect(parsePath("parent.\\0[0]")).toEqual(["parent", "", 0]);
   });
 
   test("leading dot (.name)", () => {
