@@ -148,9 +148,11 @@ export function decode<T = unknown>(
         result = new Set(result);
       } else if (typeId === "map" && Array.isArray(result)) {
         result = new Map(result as [unknown, unknown][]);
+      } else if (!isConvertedStructuralValue(result, typeId)) {
+        throwStructuralMismatch(path, typeId);
       }
     } else {
-      convertStructural(result, segments, typeId);
+      convertStructural(result, path, segments, typeId);
     }
   }
 
@@ -258,7 +260,18 @@ export async function decodeRequest<T = unknown>(
   );
 }
 
-function convertStructural(root: unknown, segments: readonly PathSegment[], typeId: string): void {
+function throwStructuralMismatch(path: string, typeId: string): never {
+  throw new TypeError(
+    `Invalid superformdata metadata: structural type "${typeId}" at path "${path}" does not match decoded value shape`,
+  );
+}
+
+function convertStructural(
+  root: unknown,
+  path: string,
+  segments: readonly PathSegment[],
+  typeId: string,
+): void {
   if (segments.length === 0) {
     // Can't convert root in-place; this shouldn't happen for structural types
     // at root level since unflatten returns the array/object directly
@@ -268,13 +281,13 @@ function convertStructural(root: unknown, segments: readonly PathSegment[], type
   let current: Record<string | number, unknown> = root as Record<string | number, unknown>;
   for (let i = 0; i < segments.length - 1; i++) {
     current = current[segments[i]!] as Record<string | number, unknown>;
-    if (current === undefined) return;
+    if (current === undefined) throwStructuralMismatch(path, typeId);
   }
 
   const lastSeg = segments[segments.length - 1]!;
   const value = current[lastSeg];
 
-  if (value instanceof Set || value instanceof Map) {
+  if (isConvertedStructuralValue(value, typeId)) {
     // Already converted (empty container case)
     return;
   }
@@ -283,7 +296,13 @@ function convertStructural(root: unknown, segments: readonly PathSegment[], type
     current[lastSeg] = new Set(value);
   } else if (typeId === "map" && Array.isArray(value)) {
     current[lastSeg] = new Map(value as [unknown, unknown][]);
+  } else {
+    throwStructuralMismatch(path, typeId);
   }
+}
+
+function isConvertedStructuralValue(value: unknown, typeId: string): boolean {
+  return (typeId === "set" && value instanceof Set) || (typeId === "map" && value instanceof Map);
 }
 
 function resizeArray(root: unknown, segments: readonly PathSegment[], length: number): void {

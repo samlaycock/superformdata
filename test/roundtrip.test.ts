@@ -616,6 +616,38 @@ describe("encode/decode round-trip", () => {
     });
   });
 
+  test("decode rejects nested structural metadata when the decoded shape is incompatible", () => {
+    expect(() =>
+      decode([
+        ["items.name", "x"],
+        ["$types", JSON.stringify({ items: "set" })],
+      ]),
+    ).toThrow('Invalid superformdata metadata: structural type "set" at path "items"');
+
+    expect(() =>
+      decode([
+        ["lookup.name", "x"],
+        ["$types", JSON.stringify({ lookup: "map" })],
+      ]),
+    ).toThrow('Invalid superformdata metadata: structural type "map" at path "lookup"');
+  });
+
+  test("decode rejects root structural metadata when the decoded shape is incompatible", () => {
+    expect(() =>
+      decode([
+        ["items.name", "x"],
+        ["$types", JSON.stringify({ "": "set" })],
+      ]),
+    ).toThrow('Invalid superformdata metadata: structural type "set" at path ""');
+
+    expect(() =>
+      decode([
+        ["items.name", "x"],
+        ["$types", JSON.stringify({ "": "map" })],
+      ]),
+    ).toThrow('Invalid superformdata metadata: structural type "map" at path ""');
+  });
+
   test("custom typesKey", () => {
     const input = { count: 42, $types: "user data here" };
     const entries = encode(input, { typesKey: "__meta" });
