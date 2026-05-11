@@ -14,6 +14,12 @@ const encoded = encode({
 
 type _EncodeReturnIsStable = Assert<Equal<typeof encoded, [string, string][]>>;
 
+const encodedWithFiles = encode(new FormData(), { files: "preserve" });
+
+type _EncodePreserveFilesReturnIncludesFiles = Assert<
+  Equal<typeof encodedWithFiles, [string, string | File][]>
+>;
+
 const decoded = decode<{
   createdAt: Date;
   active: boolean;

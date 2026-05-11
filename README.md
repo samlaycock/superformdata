@@ -97,6 +97,35 @@ decode([
 // => { tags: ["a", "b"] }
 ```
 
+## File and Blob Entries
+
+`superformdata` rejects `File` entries by default. This keeps binary uploads explicit and prevents accidental attempts to decode files as typed scalar fields.
+
+Pass `{ files: "preserve" }` when you want to send typed scalar fields alongside file uploads.
+
+```ts
+import { decode, encode } from "superformdata";
+
+const formData = new FormData();
+formData.append("title", "Quarterly report");
+formData.append("views", "1200");
+formData.append("attachment", new File(["content"], "report.txt"));
+
+const entries = encode(formData, {
+  files: "preserve",
+  types: { views: "number" },
+});
+// entries is typed as [string, string | File][]
+
+const value = decode<{
+  title: string;
+  views: number;
+  attachment: File;
+}>(entries, { files: "preserve" });
+```
+
+The same option works with `encode(form)` for `<input type="file">` controls and with `decodeRequest()` for multipart requests. Without `{ files: "preserve" }`, file inputs and file entries continue to throw.
+
 ## Decode a Request
 
 ```ts
@@ -278,9 +307,10 @@ document.querySelector('input[name="homepage"]')?.addEventListener("change", onU
 ## API
 
 ```ts
-encode<T>(input: T, options?: { typesKey?: string; types?: Record<string, string>; typeHandlers?: readonly TypeHandler[] }): [string, string][]
-decode<T = unknown>(data: FormData | Iterable<[string, FormDataEntryValue]>, options?: { typesKey?: string; typeHandlers?: readonly TypeHandler[] }): T
-decodeRequest<T = unknown>(request: Request, options?: { typesKey?: string; typeHandlers?: readonly TypeHandler[] }): Promise<T>
+encode<T>(input: T, options?: { typesKey?: string; types?: Record<string, string>; typeHandlers?: readonly TypeHandler[]; files?: "throw" | "preserve" }): [string, string][]
+encode<T>(input: T, options: { files: "preserve"; typesKey?: string; types?: Record<string, string>; typeHandlers?: readonly TypeHandler[] }): [string, string | File][]
+decode<T = unknown>(data: FormData | Iterable<[string, FormDataEntryValue]>, options?: { typesKey?: string; typeHandlers?: readonly TypeHandler[]; files?: "throw" | "preserve" }): T
+decodeRequest<T = unknown>(request: Request, options?: { typesKey?: string; typeHandlers?: readonly TypeHandler[]; files?: "throw" | "preserve" }): Promise<T>
 onChange(typeId: string, options?: { typesKey?: string }): (event: Event) => void
 ```
 

@@ -567,6 +567,35 @@ describe("encode/decode round-trip", () => {
     expect(() => decode(formData)).toThrow(/File entries are not supported/);
   });
 
+  test('decode preserves File entries when files option is "preserve"', () => {
+    const formData = new FormData();
+    const file = new File(["content"], "test.txt", { type: "text/plain" });
+    formData.append("name", "Alice");
+    formData.append("file", file);
+    formData.append("age", "30");
+    formData.append("$types", JSON.stringify({ age: "number" }));
+
+    expect(
+      decode<{ name: string; file: File; age: number }>(formData, { files: "preserve" }),
+    ).toEqual({
+      name: "Alice",
+      file,
+      age: 30,
+    });
+  });
+
+  test('decode preserves repeated File entries when files option is "preserve"', () => {
+    const formData = new FormData();
+    const first = new File(["first"], "first.txt");
+    const second = new File(["second"], "second.txt");
+    formData.append("attachments", first);
+    formData.append("attachments", second);
+
+    expect(decode<{ attachments: File[] }>(formData, { files: "preserve" })).toEqual({
+      attachments: [first, second],
+    });
+  });
+
   test("decode from FormData", () => {
     const original = { name: "Alice", age: 30 };
     const entries = encode(original);

@@ -404,6 +404,23 @@ describe("encode(form)", () => {
     expect(() => encode(form)).toThrow(/File inputs are not supported/);
   });
 
+  test('preserves file inputs when files option is "preserve"', () => {
+    const form = createForm('<input name="name" value="Alice" /><input name="file" type="file" />');
+    const input = form.querySelector<HTMLInputElement>('input[type="file"]')!;
+    const file = new File(["content"], "test.txt", { type: "text/plain" });
+
+    Object.defineProperty(input, "files", {
+      value: [file],
+    });
+
+    const entries = encode(form, { files: "preserve" });
+
+    expect(entries).toEqual([
+      ["name", "Alice"],
+      ["file", file],
+    ]);
+  });
+
   test("encodes with custom typesKey", () => {
     const form = createForm('<input name="count" data-sf-type="number" value="42" />');
     const entries = encode(form, { typesKey: "__meta" });
@@ -604,5 +621,22 @@ describe("encode(FormData)", () => {
     fd.append("file", new File(["content"], "test.txt"));
 
     expect(() => encode(fd)).toThrow(/File entries are not supported/);
+  });
+
+  test('preserves File entries when files option is "preserve"', () => {
+    const fd = new FormData();
+    const file = new File(["content"], "test.txt", { type: "text/plain" });
+    fd.append("name", "Alice");
+    fd.append("file", file);
+    fd.append("count", "42");
+
+    const entries = encode(fd, { files: "preserve", types: { count: "number" } });
+
+    expect(entries).toContainEqual(["name", "Alice"]);
+    expect(entries).toContainEqual(["file", file]);
+    expect(entries).toContainEqual(["count", "42"]);
+    expect(JSON.parse(entries.find(([key]) => key === "$types")![1] as string)).toEqual({
+      count: "number",
+    });
   });
 });

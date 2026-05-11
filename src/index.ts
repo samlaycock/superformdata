@@ -10,6 +10,12 @@ export {
   onURLChange,
 } from "./client.ts";
 export type { ChangeHandlerOptions, ChangeHandlers } from "./client.ts";
-export type { EncodeOptions } from "./encode.ts";
+export type {
+  EncodedEntry,
+  EncodeOptions,
+  EncodePreserveFilesOptions,
+  FileStrategy,
+  PreservedFileEntry,
+} from "./encode.ts";
 export type { DecodeOptions } from "./decode.ts";
 export type { TypeHandler, TypeHandlerList } from "./types.ts";
