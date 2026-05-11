@@ -639,4 +639,13 @@ describe("encode(FormData)", () => {
       count: "number",
     });
   });
+
+  test("throws when preserved File entry uses the metadata key", () => {
+    const fd = new FormData();
+    fd.append("$types", new File(["content"], "metadata.txt"));
+
+    expect(() => encode(fd, { files: "preserve" })).toThrow(
+      'Invalid superformdata metadata: "$types" field must be a string',
+    );
+  });
 });
