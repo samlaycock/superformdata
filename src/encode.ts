@@ -60,11 +60,11 @@ export function encode<T>(
   }
 
   // Plain value (existing behavior)
-  const entries: EncodedEntry[] = [];
+  const entries: PreservedFileEntry[] = [];
   const types: Record<string, string> = {};
   const seen = new Set<unknown>();
 
-  walk(input, "", entries, types, seen, registry);
+  walk(input, "", entries, types, seen, registry, fileStrategy, typesKey);
 
   if (Object.keys(types).length > 0) {
     entries.push([typesKey, JSON.stringify(types)]);
@@ -215,6 +215,9 @@ function encodeStringEntries(
           `File entries are not supported by superformdata (field: "${key}"). Handle file uploads separately or pass { files: "preserve" }.`,
         );
       }
+      if (key === typesKey) {
+        throw new TypeError(`Invalid superformdata metadata: "${typesKey}" field must be a string`);
+      }
       entries.push([key, value]);
       continue;
     }
@@ -252,20 +255,39 @@ function trackRef(value: unknown, path: string, seen: Set<unknown>): void {
   seen.add(value);
 }
 
+function isFileValue(value: unknown): value is File {
+  return typeof File !== "undefined" && value instanceof File;
+}
+
 function walk(
   value: unknown,
   path: string,
-  entries: [string, string][],
+  entries: PreservedFileEntry[],
   types: Record<string, string>,
   seen: Set<unknown>,
   registry: ReturnType<typeof createTypeRegistry>,
+  fileStrategy: FileStrategy,
+  typesKey: string,
 ): void {
+  if (isFileValue(value)) {
+    if (fileStrategy !== "preserve") {
+      throw new TypeError(
+        `File values are not supported by superformdata at path "${path}". Handle file uploads separately or pass { files: "preserve" }.`,
+      );
+    }
+    if (path === typesKey) {
+      throw new TypeError(`Invalid superformdata metadata: "${typesKey}" field must be a string`);
+    }
+    entries.push([path, value]);
+    return;
+  }
+
   if (value instanceof Set) {
     trackRef(value, path, seen);
     types[path] = "set";
     let i = 0;
     for (const item of value) {
-      walk(item, appendIndex(path, i), entries, types, seen, registry);
+      walk(item, appendIndex(path, i), entries, types, seen, registry, fileStrategy, typesKey);
       i++;
     }
     seen.delete(value);
@@ -277,8 +299,26 @@ function walk(
     types[path] = "map";
     let i = 0;
     for (const [k, v] of value) {
-      walk(k, appendIndex(appendIndex(path, i), 0), entries, types, seen, registry);
-      walk(v, appendIndex(appendIndex(path, i), 1), entries, types, seen, registry);
+      walk(
+        k,
+        appendIndex(appendIndex(path, i), 0),
+        entries,
+        types,
+        seen,
+        registry,
+        fileStrategy,
+        typesKey,
+      );
+      walk(
+        v,
+        appendIndex(appendIndex(path, i), 1),
+        entries,
+        types,
+        seen,
+        registry,
+        fileStrategy,
+        typesKey,
+      );
       i++;
     }
     seen.delete(value);
@@ -300,7 +340,7 @@ function walk(
         types[path] = `array:${value.length}`;
         continue;
       }
-      walk(value[i], appendIndex(path, i), entries, types, seen, registry);
+      walk(value[i], appendIndex(path, i), entries, types, seen, registry, fileStrategy, typesKey);
     }
     seen.delete(value);
     return;
@@ -325,7 +365,16 @@ function walk(
       return;
     }
     for (const key of keys) {
-      walk(value[key], appendKey(path, key), entries, types, seen, registry);
+      walk(
+        value[key],
+        appendKey(path, key),
+        entries,
+        types,
+        seen,
+        registry,
+        fileStrategy,
+        typesKey,
+      );
     }
     seen.delete(value);
     return;

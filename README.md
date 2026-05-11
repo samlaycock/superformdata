@@ -124,7 +124,7 @@ const value = decode<{
 }>(entries, { files: "preserve" });
 ```
 
-The same option works with `encode(form)` for `<input type="file">` controls and with `decodeRequest()` for multipart requests. Without `{ files: "preserve" }`, file inputs and file entries continue to throw.
+The same option works with `encode(form)` for `<input type="file">` controls, plain object `File` values, and `decodeRequest()` for multipart requests. Without `{ files: "preserve" }`, file inputs and file entries continue to throw.
 
 ## Decode a Request
 

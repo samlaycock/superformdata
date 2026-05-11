@@ -515,6 +515,28 @@ describe("encode/decode round-trip", () => {
     expect(result.b.source).toBe("test");
   });
 
+  test('encode preserves File values in plain objects when files option is "preserve"', () => {
+    const file = new File(["content"], "test.txt", { type: "text/plain" });
+
+    expect(encode({ attachment: file }, { files: "preserve" })).toEqual([["attachment", file]]);
+  });
+
+  test("encode throws a file-specific error for plain object File values by default", () => {
+    const file = new File(["content"], "test.txt");
+
+    expect(() => encode({ attachment: file })).toThrow(
+      'File values are not supported by superformdata at path "attachment"',
+    );
+  });
+
+  test("encode throws when a preserved plain object File value uses the metadata key", () => {
+    const file = new File(["content"], "metadata.txt");
+
+    expect(() => encode({ $types: file }, { files: "preserve" })).toThrow(
+      'Invalid superformdata metadata: "$types" field must be a string',
+    );
+  });
+
   test("decode with no entries returns empty object", () => {
     expect(decode<Record<string, never>>([])).toEqual({});
   });
