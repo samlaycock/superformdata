@@ -4,10 +4,19 @@ import { createTypeRegistry, findHandler, type TypeHandlerList } from "./types.t
 
 export const DEFAULT_TYPES_KEY = "$types";
 
+export type EncodedEntry = [string, string];
+export type PreservedFileEntry = [string, string | File];
+export type FileStrategy = "throw" | "preserve";
+
 export interface EncodeOptions {
   typesKey?: string;
   types?: Record<string, string>;
   typeHandlers?: TypeHandlerList;
+  /**
+   * File and Blob values are rejected by default so callers do not accidentally
+   * treat binary uploads as typed scalar data.
+   */
+  files?: FileStrategy;
   /**
    * The element used to submit the form, mirroring `new FormData(form, submitter)`.
    * Only submit buttons (`<button>`, `input[type=submit]`) that equal this element
@@ -21,27 +30,37 @@ export interface EncodeOptions {
   submitter?: HTMLElement | null;
 }
 
-export function encode<T>(input: T, options?: EncodeOptions): [string, string][] {
+export interface EncodePreserveFilesOptions extends EncodeOptions {
+  files: "preserve";
+}
+
+export function encode<T>(input: T, options: EncodePreserveFilesOptions): PreservedFileEntry[];
+export function encode<T>(input: T, options?: EncodeOptions): EncodedEntry[];
+export function encode<T>(
+  input: T,
+  options?: EncodeOptions,
+): EncodedEntry[] | PreservedFileEntry[] {
   const typesKey = options?.typesKey ?? DEFAULT_TYPES_KEY;
   const registry = createTypeRegistry(options?.typeHandlers);
+  const fileStrategy = options?.files ?? "throw";
 
   // HTMLFormElement
   if (typeof HTMLFormElement !== "undefined" && input instanceof HTMLFormElement) {
-    return encodeForm(input, typesKey, registry, options?.types, options?.submitter);
+    return encodeForm(input, typesKey, registry, fileStrategy, options?.types, options?.submitter);
   }
 
   // FormData
   if (typeof FormData !== "undefined" && input instanceof FormData) {
-    return encodeStringEntries(input, typesKey, registry, options?.types);
+    return encodeStringEntries(input, typesKey, registry, fileStrategy, options?.types);
   }
 
   // URLSearchParams
   if (typeof URLSearchParams !== "undefined" && input instanceof URLSearchParams) {
-    return encodeStringEntries(input, typesKey, registry, options?.types);
+    return encodeStringEntries(input, typesKey, registry, fileStrategy, options?.types);
   }
 
   // Plain value (existing behavior)
-  const entries: [string, string][] = [];
+  const entries: EncodedEntry[] = [];
   const types: Record<string, string> = {};
   const seen = new Set<unknown>();
 
@@ -94,10 +113,11 @@ function encodeForm(
   form: HTMLFormElement,
   typesKey: string,
   registry: ReturnType<typeof createTypeRegistry>,
+  fileStrategy: FileStrategy,
   explicitTypes?: Record<string, string>,
   submitter?: HTMLElement | null,
-): [string, string][] {
-  const entries: [string, string][] = [];
+): EncodedEntry[] | PreservedFileEntry[] {
+  const entries: PreservedFileEntry[] = [];
   const types: Record<string, string> = { ...explicitTypes };
 
   for (const element of form.elements) {
@@ -157,9 +177,13 @@ function encodeForm(
     }
 
     if (input.type === "file") {
-      throw new TypeError(
-        `File inputs are not supported by superformdata (field: "${input.name}"). Handle file uploads separately.`,
-      );
+      if (fileStrategy !== "preserve") {
+        throw new TypeError(
+          `File inputs are not supported by superformdata (field: "${input.name}"). Handle file uploads separately or pass { files: "preserve" }.`,
+        );
+      }
+      for (const file of input.files ?? []) entries.push([input.name, file]);
+      continue;
     }
 
     entries.push([el.name, input.value]);
@@ -178,16 +202,21 @@ function encodeStringEntries(
   data: Iterable<[string, string | File]>,
   typesKey: string,
   registry: ReturnType<typeof createTypeRegistry>,
+  fileStrategy: FileStrategy,
   explicitTypes?: Record<string, string>,
-): [string, string][] {
-  const entries: [string, string][] = [];
+): EncodedEntry[] | PreservedFileEntry[] {
+  const entries: PreservedFileEntry[] = [];
   let existingTypes: Record<string, string> | undefined;
 
   for (const [key, value] of data) {
     if (typeof value !== "string") {
-      throw new TypeError(
-        `File entries are not supported by superformdata (field: "${key}"). Handle file uploads separately.`,
-      );
+      if (fileStrategy !== "preserve") {
+        throw new TypeError(
+          `File entries are not supported by superformdata (field: "${key}"). Handle file uploads separately or pass { files: "preserve" }.`,
+        );
+      }
+      entries.push([key, value]);
+      continue;
     }
     if (key === typesKey) {
       try {

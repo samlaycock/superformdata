@@ -19,6 +19,11 @@ interface StructuralPath {
 export interface DecodeOptions {
   typesKey?: string;
   typeHandlers?: TypeHandlerList;
+  /**
+   * File and Blob values are rejected by default so callers do not accidentally
+   * treat binary uploads as typed scalar data.
+   */
+  files?: "throw" | "preserve";
 }
 
 export function decode<T = unknown>(
@@ -27,14 +32,23 @@ export function decode<T = unknown>(
 ): T {
   const typesKey = options?.typesKey ?? DEFAULT_TYPES_KEY;
   const raw: [string, string][] = [];
+  const preservedRaw: ParsedPathEntry[] = [];
   let typesJson: string | undefined;
   const registry = createTypeRegistry(options?.typeHandlers);
+  const fileStrategy = options?.files ?? "throw";
 
   for (const [key, value] of data) {
     if (typeof value !== "string") {
-      throw new TypeError(
-        `File entries are not supported by superformdata (field: "${key}"). Handle file uploads separately.`,
-      );
+      if (fileStrategy !== "preserve") {
+        throw new TypeError(
+          `File entries are not supported by superformdata (field: "${key}"). Handle file uploads separately or pass { files: "preserve" }.`,
+        );
+      }
+      if (key === typesKey) {
+        throw new TypeError(`Invalid superformdata metadata: "${typesKey}" field must be a string`);
+      }
+      preservedRaw.push({ path: key, segments: parsePath(key), value });
+      continue;
     }
     if (key === typesKey) {
       typesJson = value;
@@ -65,7 +79,7 @@ export function decode<T = unknown>(
   }
 
   // Deserialize leaf values
-  const deserialized: ParsedPathEntry[] = [];
+  const deserialized: ParsedPathEntry[] = [...preservedRaw];
   for (const [path, value] of raw) {
     const typeId = types[path];
     const segments = parsePath(path);
