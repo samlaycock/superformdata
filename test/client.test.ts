@@ -52,6 +52,18 @@ describe("onChange handlers", () => {
     expect(JSON.parse(typesInput!.value)).toEqual({ count: "number" });
   });
 
+  test("onChange rejects unknown type ids before updating form metadata", () => {
+    const form = createForm('<input name="count" type="number" />');
+    const input = form.querySelector<HTMLInputElement>('input[name="count"]')!;
+    const handler = onChange("missing");
+
+    expect(() => handler({ target: input } as unknown as Event)).toThrow(
+      'Unknown type id "missing" for typed field "count"',
+    );
+    expect(input.dataset.sfType).toBeUndefined();
+    expect(form.querySelector<HTMLInputElement>('input[name="$types"]')).toBeNull();
+  });
+
   test("onDateChange", () => {
     const form = createForm('<input name="createdAt" type="date" />');
     const input = form.querySelector<HTMLInputElement>('input[name="createdAt"]')!;
@@ -221,6 +233,20 @@ describe("encode(form)", () => {
     const types = JSON.parse(typesEntry![1]);
     expect(types.count).toBe("number");
     expect(types.createdAt).toBe("Date");
+  });
+
+  test("rejects unknown data-sf-type values with the field name", () => {
+    const form = createForm('<input name="count" data-sf-type="missing" value="42" />');
+
+    expect(() => encode(form)).toThrow('Unknown type id "missing" for typed field "count"');
+  });
+
+  test("rejects unknown explicit type values with the field name", () => {
+    const form = createForm('<input name="count" value="42" />');
+
+    expect(() => encode(form, { types: { count: "missing" } })).toThrow(
+      'Unknown type id "missing" for typed field "count"',
+    );
   });
 
   test("encodes checkbox with boolean type", () => {
@@ -489,6 +515,23 @@ describe("encode(FormData)", () => {
     const typesEntry = entries.find(([k]) => k === "$types");
     expect(typesEntry).toBeDefined();
     expect(JSON.parse(typesEntry![1]).count).toBe("number");
+  });
+
+  test("rejects unknown existing $types values with the field name", () => {
+    const fd = new FormData();
+    fd.append("count", "42");
+    fd.append("$types", JSON.stringify({ count: "missing" }));
+
+    expect(() => encode(fd)).toThrow('Unknown type id "missing" for typed field "count"');
+  });
+
+  test("rejects unknown explicit types with the field name", () => {
+    const fd = new FormData();
+    fd.append("count", "42");
+
+    expect(() => encode(fd, { types: { count: "missing" } })).toThrow(
+      'Unknown type id "missing" for typed field "count"',
+    );
   });
 
   test("explicit types override existing $types", () => {

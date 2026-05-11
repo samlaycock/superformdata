@@ -1,3 +1,4 @@
+import { validateKnownTypeId, validateKnownTypeIds } from "./metadata.ts";
 import { MAX_SPARSE_ARRAY_LENGTH, appendIndex, appendKey } from "./path.ts";
 import { createTypeRegistry, findHandler, type TypeHandlerList } from "./types.ts";
 
@@ -26,17 +27,17 @@ export function encode<T>(input: T, options?: EncodeOptions): [string, string][]
 
   // HTMLFormElement
   if (typeof HTMLFormElement !== "undefined" && input instanceof HTMLFormElement) {
-    return encodeForm(input, typesKey, options?.types, options?.submitter);
+    return encodeForm(input, typesKey, registry, options?.types, options?.submitter);
   }
 
   // FormData
   if (typeof FormData !== "undefined" && input instanceof FormData) {
-    return encodeStringEntries(input, typesKey, options?.types);
+    return encodeStringEntries(input, typesKey, registry, options?.types);
   }
 
   // URLSearchParams
   if (typeof URLSearchParams !== "undefined" && input instanceof URLSearchParams) {
-    return encodeStringEntries(input, typesKey, options?.types);
+    return encodeStringEntries(input, typesKey, registry, options?.types);
   }
 
   // Plain value (existing behavior)
@@ -92,6 +93,7 @@ function isDisabledByFieldset(element: Element): boolean {
 function encodeForm(
   form: HTMLFormElement,
   typesKey: string,
+  registry: ReturnType<typeof createTypeRegistry>,
   explicitTypes?: Record<string, string>,
   submitter?: HTMLElement | null,
 ): [string, string][] {
@@ -126,6 +128,7 @@ function encodeForm(
     }
 
     const typeId = (el as HTMLInputElement).dataset?.sfType ?? types[el.name];
+    if (typeId) validateKnownTypeId(el.name, typeId, registry);
 
     if (el instanceof HTMLSelectElement && el.multiple) {
       for (const opt of el.selectedOptions) {
@@ -165,6 +168,7 @@ function encodeForm(
   }
 
   if (Object.keys(types).length > 0) {
+    validateKnownTypeIds(types, registry);
     entries.push([typesKey, JSON.stringify(types)]);
   }
 
@@ -174,6 +178,7 @@ function encodeForm(
 function encodeStringEntries(
   data: Iterable<[string, string | File]>,
   typesKey: string,
+  registry: ReturnType<typeof createTypeRegistry>,
   explicitTypes?: Record<string, string>,
 ): [string, string][] {
   const entries: [string, string][] = [];
@@ -199,6 +204,7 @@ function encodeStringEntries(
   const types = { ...existingTypes, ...explicitTypes };
 
   if (Object.keys(types).length > 0) {
+    validateKnownTypeIds(types, registry);
     entries.push([typesKey, JSON.stringify(types)]);
   }
 

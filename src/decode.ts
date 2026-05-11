@@ -1,6 +1,6 @@
 import { DEFAULT_TYPES_KEY } from "./encode.ts";
+import { isStructuralType, parseSparseArrayTypeId, validateKnownTypeIds } from "./metadata.ts";
 import {
-  MAX_SPARSE_ARRAY_LENGTH,
   appendIndex,
   appendKey,
   parsePath,
@@ -8,14 +8,7 @@ import {
   type ParsedPathEntry,
   type PathSegment,
 } from "./path.ts";
-import {
-  createTypeRegistry,
-  getHandler,
-  type TypeHandlerList,
-  type TypeRegistry,
-} from "./types.ts";
-
-const STRUCTURAL_TYPES = new Set(["set", "map", "array", "object"]);
+import { createTypeRegistry, getHandler, type TypeHandlerList } from "./types.ts";
 
 interface StructuralPath {
   readonly path: string;
@@ -174,31 +167,6 @@ function validateTypesMetadata(
       );
     }
   }
-}
-
-function validateKnownTypeIds(types: Record<string, string>, registry: TypeRegistry): void {
-  for (const [path, typeId] of Object.entries(types)) {
-    if (isStructuralType(typeId)) continue;
-    if (getHandler(typeId, registry)) continue;
-
-    throw new TypeError(`Unknown type id "${typeId}" for typed field "${path}"`);
-  }
-}
-
-function isStructuralType(typeId: string): boolean {
-  return STRUCTURAL_TYPES.has(typeId) || parseSparseArrayTypeId(typeId) !== undefined;
-}
-
-function parseSparseArrayTypeId(typeId: string): number | undefined {
-  if (!typeId.startsWith("array:")) return undefined;
-
-  const rawLength = typeId.slice("array:".length);
-  if (!/^(?:0|[1-9]\d*)$/.test(rawLength)) return undefined;
-
-  const length = Number(rawLength);
-  if (!Number.isSafeInteger(length) || length > MAX_SPARSE_ARRAY_LENGTH) return undefined;
-
-  return length;
 }
 
 function createSparseArray(length: number): unknown[] {

@@ -1,4 +1,6 @@
 import { DEFAULT_TYPES_KEY } from "./encode.ts";
+import { validateKnownTypeId } from "./metadata.ts";
+import { createTypeRegistry } from "./types.ts";
 
 export interface ChangeHandlerOptions {
   readonly typesKey?: string;
@@ -61,11 +63,13 @@ function createBooleanChangeHandler(typesKey: string): (event: Event) => void {
 
 export function onChange(typeId: string, options?: ChangeHandlerOptions): (event: Event) => void {
   const typesKey = options?.typesKey ?? DEFAULT_TYPES_KEY;
+  const registry = createTypeRegistry();
 
   return (event: Event) => {
     const input = event.target as HTMLInputElement;
     if (!input.name || !input.form) return;
 
+    validateKnownTypeId(input.name, typeId, registry);
     input.dataset.sfType = typeId;
     updateFormTypes(input.form, input.name, typeId, typesKey);
   };
