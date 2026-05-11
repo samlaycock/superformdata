@@ -25,7 +25,7 @@ npm install superformdata
 ## Basic Usage
 
 ```ts
-import { decode, encode } from "superformdata";
+import { decode, encode } from "superformdata/core";
 
 const input = {
   user: {
@@ -45,7 +45,7 @@ const value = decode<typeof input>(entries);
 Serialize a rich value into form-style entries.
 
 ```ts
-import { encode } from "superformdata";
+import { encode } from "superformdata/core";
 
 const entries = encode({
   title: "Quarterly report",
@@ -69,7 +69,7 @@ console.log(entries);
 Decode `FormData` entries back into a typed value.
 
 ```ts
-import { decode } from "superformdata";
+import { decode } from "superformdata/core";
 
 const entries = [
   ["user.name", "Alice"],
@@ -104,7 +104,7 @@ decode([
 Pass `{ files: "preserve" }` when you want to send typed scalar fields alongside file uploads.
 
 ```ts
-import { decode, encode } from "superformdata";
+import { decode, encode } from "superformdata/core";
 
 const formData = new FormData();
 formData.append("title", "Quarterly report");
@@ -129,7 +129,7 @@ The same option works with `encode(form)` for `<input type="file">` controls, pl
 ## Decode a Request
 
 ```ts
-import { decodeRequest } from "superformdata";
+import { decodeRequest } from "superformdata/core";
 
 export async function POST(request: Request) {
   const data = await decodeRequest<{
@@ -146,7 +146,7 @@ export async function POST(request: Request) {
 Pass custom handlers to `encode()` and `decode()` when you need to round-trip domain-specific values.
 
 ```ts
-import { decode, encode, type TypeHandler } from "superformdata";
+import { decode, encode, type TypeHandler } from "superformdata/core";
 
 interface Money {
   readonly cents: number;
@@ -174,7 +174,7 @@ Custom handler IDs must be unique and cannot use built-in or structural IDs such
 Decode a `Request` body directly.
 
 ```ts
-import { decodeRequest } from "superformdata";
+import { decodeRequest } from "superformdata/core";
 
 export async function action(request: Request) {
   const data = await decodeRequest<{
@@ -201,7 +201,7 @@ import {
   onDateChange,
   onNumberChange,
   onURLChange,
-} from "superformdata";
+} from "superformdata/client";
 
 document.querySelector('input[name="count"]')?.addEventListener("change", onNumberChange);
 document.querySelector('input[name="createdAt"]')?.addEventListener("change", onDateChange);
@@ -216,7 +216,7 @@ document.querySelector('input[name="pattern"]')?.addEventListener("change", onCh
 Then pass the form to `encode()`:
 
 ```ts
-import { encode } from "superformdata";
+import { encode } from "superformdata/core";
 
 const form = document.querySelector("form");
 const entries = encode(form!);
@@ -239,7 +239,7 @@ The package currently recognizes `data-sf-type`.
 ```
 
 ```ts
-import { encode } from "superformdata";
+import { encode } from "superformdata/core";
 
 const form = document.querySelector<HTMLFormElement>("#post-form")!;
 const entries = encode(form);
@@ -258,7 +258,7 @@ No other `data-sf-*` attributes are currently read by the package.
 Attach your own type id to an input.
 
 ```ts
-import { onChange } from "superformdata";
+import { onChange } from "superformdata/client";
 
 const patternInput = document.querySelector<HTMLInputElement>('input[name="pattern"]')!;
 patternInput.addEventListener("change", onChange("RegExp"));
@@ -267,7 +267,7 @@ patternInput.addEventListener("change", onChange("RegExp"));
 ### `onDateChange()`
 
 ```ts
-import { onDateChange } from "superformdata";
+import { onDateChange } from "superformdata/client";
 
 document.querySelector('input[name="publishedAt"]')?.addEventListener("change", onDateChange);
 ```
@@ -275,7 +275,7 @@ document.querySelector('input[name="publishedAt"]')?.addEventListener("change", 
 ### `onNumberChange()`
 
 ```ts
-import { onNumberChange } from "superformdata";
+import { onNumberChange } from "superformdata/client";
 
 document.querySelector('input[name="price"]')?.addEventListener("change", onNumberChange);
 ```
@@ -283,7 +283,7 @@ document.querySelector('input[name="price"]')?.addEventListener("change", onNumb
 ### `onBooleanChange()`
 
 ```ts
-import { onBooleanChange } from "superformdata";
+import { onBooleanChange } from "superformdata/client";
 
 document.querySelector('input[name="completed"]')?.addEventListener("change", onBooleanChange);
 ```
@@ -291,7 +291,7 @@ document.querySelector('input[name="completed"]')?.addEventListener("change", on
 ### `onBigIntChange()`
 
 ```ts
-import { onBigIntChange } from "superformdata";
+import { onBigIntChange } from "superformdata/client";
 
 document.querySelector('input[name="orderId"]')?.addEventListener("change", onBigIntChange);
 ```
@@ -299,7 +299,7 @@ document.querySelector('input[name="orderId"]')?.addEventListener("change", onBi
 ### `onURLChange()`
 
 ```ts
-import { onURLChange } from "superformdata";
+import { onURLChange } from "superformdata/client";
 
 document.querySelector('input[name="homepage"]')?.addEventListener("change", onURLChange);
 ```
