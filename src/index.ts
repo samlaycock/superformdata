@@ -1,5 +1,16 @@
-export { encode } from "./encode.ts";
-export { decode, decodeRequest } from "./decode.ts";
+export {
+  decode,
+  decodeRequest,
+  encode,
+  type DecodeOptions,
+  type EncodedEntry,
+  type EncodeOptions,
+  type EncodePreserveFilesOptions,
+  type FileStrategy,
+  type PreservedFileEntry,
+  type TypeHandler,
+  type TypeHandlerList,
+} from "./core.ts";
 export {
   createChangeHandlers,
   onChange,
@@ -10,12 +21,3 @@ export {
   onURLChange,
 } from "./client.ts";
 export type { ChangeHandlerOptions, ChangeHandlers } from "./client.ts";
-export type {
-  EncodedEntry,
-  EncodeOptions,
-  EncodePreserveFilesOptions,
-  FileStrategy,
-  PreservedFileEntry,
-} from "./encode.ts";
-export type { DecodeOptions } from "./decode.ts";
-export type { TypeHandler, TypeHandlerList } from "./types.ts";
