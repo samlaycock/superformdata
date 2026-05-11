@@ -1,9 +1,10 @@
 import { DEFAULT_TYPES_KEY } from "./encode.ts";
 import { validateKnownTypeId } from "./metadata.ts";
-import { createTypeRegistry } from "./types.ts";
+import { createTypeRegistry, type TypeHandlerList } from "./types.ts";
 
 export interface ChangeHandlerOptions {
   readonly typesKey?: string;
+  readonly typeHandlers?: TypeHandlerList;
 }
 
 export interface ChangeHandlers {
@@ -63,7 +64,7 @@ function createBooleanChangeHandler(typesKey: string): (event: Event) => void {
 
 export function onChange(typeId: string, options?: ChangeHandlerOptions): (event: Event) => void {
   const typesKey = options?.typesKey ?? DEFAULT_TYPES_KEY;
-  const registry = createTypeRegistry();
+  const registry = createTypeRegistry(options?.typeHandlers);
 
   return (event: Event) => {
     const input = event.target as HTMLInputElement;
@@ -79,11 +80,11 @@ export function createChangeHandlers(options?: ChangeHandlerOptions): ChangeHand
   const typesKey = options?.typesKey ?? DEFAULT_TYPES_KEY;
 
   return {
-    onDateChange: onChange("Date", { typesKey }),
-    onNumberChange: onChange("number", { typesKey }),
+    onDateChange: onChange("Date", options),
+    onNumberChange: onChange("number", options),
     onBooleanChange: createBooleanChangeHandler(typesKey),
-    onBigIntChange: onChange("bigint", { typesKey }),
-    onURLChange: onChange("URL", { typesKey }),
+    onBigIntChange: onChange("bigint", options),
+    onURLChange: onChange("URL", options),
   };
 }
 
