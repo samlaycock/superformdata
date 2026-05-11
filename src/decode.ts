@@ -1,5 +1,10 @@
 import { DEFAULT_TYPES_KEY } from "./encode.ts";
-import { isStructuralType, parseSparseArrayTypeId, validateKnownTypeIds } from "./metadata.ts";
+import {
+  isStructuralType,
+  parseSparseArrayTypeId,
+  validateKnownTypeIds,
+  validateTypesMetadata,
+} from "./metadata.ts";
 import {
   appendIndex,
   appendKey,
@@ -51,6 +56,9 @@ export function decode<T = unknown>(
       continue;
     }
     if (key === typesKey) {
+      if (typesJson !== undefined) {
+        throw new TypeError(`Invalid superformdata metadata: duplicate "${typesKey}" field`);
+      }
       typesJson = value;
     } else {
       raw.push([key, value]);
@@ -164,23 +172,6 @@ export function decode<T = unknown>(
   }
 
   return result as T;
-}
-
-function validateTypesMetadata(
-  types: unknown,
-  typesKey: string,
-): asserts types is Record<string, string> {
-  if (types === null || typeof types !== "object" || Array.isArray(types)) {
-    throw new TypeError(`Invalid superformdata metadata: "${typesKey}" field must be an object`);
-  }
-
-  for (const [path, typeId] of Object.entries(types)) {
-    if (typeof typeId !== "string") {
-      throw new TypeError(
-        `Invalid superformdata metadata: "${typesKey}" field must map paths to string type ids (path: "${path}")`,
-      );
-    }
-  }
 }
 
 function createSparseArray(length: number): unknown[] {
