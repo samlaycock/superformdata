@@ -281,7 +281,7 @@ function convertStructural(
   let current: Record<string | number, unknown> = root as Record<string | number, unknown>;
   for (let i = 0; i < segments.length - 1; i++) {
     current = current[segments[i]!] as Record<string | number, unknown>;
-    if (current === undefined) throwStructuralMismatch(path, typeId);
+    if (current === null || current === undefined) throwStructuralMismatch(path, typeId);
   }
 
   const lastSeg = segments[segments.length - 1]!;
