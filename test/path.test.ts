@@ -259,6 +259,24 @@ describe("unflatten", () => {
     ).toThrow('Path collision at "a" while decoding path "a[0]": incompatible container type');
   });
 
+  test("rejects object root before array root path collisions", () => {
+    expect(() =>
+      unflatten([
+        ["a", "x"],
+        ["[0]", "y"],
+      ]),
+    ).toThrow('Path collision at root while decoding path "[0]": incompatible container type');
+  });
+
+  test("rejects array root before object root path collisions", () => {
+    expect(() =>
+      unflatten([
+        ["[0]", "y"],
+        ["a", "x"],
+      ]),
+    ).toThrow('Path collision at root while decoding path "a": incompatible container type');
+  });
+
   test("rejects path segments that can mutate object prototypes", () => {
     expect(() => unflatten([["__proto__.polluted", "yes"]])).toThrow(
       'Unsafe path segment "__proto__"',
