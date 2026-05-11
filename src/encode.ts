@@ -1,4 +1,4 @@
-import { validateKnownTypeId, validateKnownTypeIds } from "./metadata.ts";
+import { validateKnownTypeIds } from "./metadata.ts";
 import { MAX_SPARSE_ARRAY_LENGTH, appendIndex, appendKey } from "./path.ts";
 import { createTypeRegistry, findHandler, type TypeHandlerList } from "./types.ts";
 
@@ -128,7 +128,6 @@ function encodeForm(
     }
 
     const typeId = (el as HTMLInputElement).dataset?.sfType ?? types[el.name];
-    if (typeId) validateKnownTypeId(el.name, typeId, registry);
 
     if (el instanceof HTMLSelectElement && el.multiple) {
       for (const opt of el.selectedOptions) {

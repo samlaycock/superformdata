@@ -64,6 +64,24 @@ describe("onChange handlers", () => {
     expect(form.querySelector<HTMLInputElement>('input[name="$types"]')).toBeNull();
   });
 
+  test("onChange accepts custom type ids when matching type handlers are provided", () => {
+    const customTypeHandler: TypeHandler<string> = {
+      id: "Currency",
+      test: (value): value is string => typeof value === "string",
+      serialize: String,
+      deserialize: (raw) => raw,
+    };
+    const form = createForm('<input name="amount" type="text" />');
+    const input = form.querySelector<HTMLInputElement>('input[name="amount"]')!;
+    const handler = onChange("Currency", { typeHandlers: [customTypeHandler] });
+
+    handler({ target: input } as unknown as Event);
+
+    expect(input.dataset.sfType).toBe("Currency");
+    const types = JSON.parse(form.querySelector<HTMLInputElement>('input[name="$types"]')!.value);
+    expect(types).toEqual({ amount: "Currency" });
+  });
+
   test("onDateChange", () => {
     const form = createForm('<input name="createdAt" type="date" />');
     const input = form.querySelector<HTMLInputElement>('input[name="createdAt"]')!;
