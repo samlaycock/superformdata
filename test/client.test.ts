@@ -272,6 +272,16 @@ describe("encode(form)", () => {
         '<input name="noop" type="button" value="ignored" />' +
         '<input name="reset" type="reset" value="ignored" />',
     );
+
+    expect(Array.from(form.elements, (element) => element.tagName)).toEqual([
+      "FIELDSET",
+      "INPUT",
+      "OUTPUT",
+      "OBJECT",
+      "INPUT",
+      "INPUT",
+    ]);
+
     const entries = encode(form);
 
     expect(entries).toEqual([["x", "1"]]);
