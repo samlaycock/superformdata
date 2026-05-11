@@ -354,6 +354,24 @@ describe("encode/decode round-trip", () => {
     ]);
   });
 
+  test("URLSearchParams encode throws on malformed existing metadata", () => {
+    const params = new URLSearchParams("count=42");
+    params.set("$types", "not json");
+
+    expect(() => encode(params)).toThrow(
+      'Invalid superformdata metadata: "$types" field contains malformed JSON',
+    );
+  });
+
+  test("URLSearchParams encode throws on invalid existing metadata shape", () => {
+    const params = new URLSearchParams("count=42");
+    params.set("$types", JSON.stringify({ count: 30 }));
+
+    expect(() => encode(params)).toThrow(
+      'Invalid superformdata metadata: "$types" field must map paths to string type ids (path: "count")',
+    );
+  });
+
   test("nested invalid Date throws path-aware TypeError", () => {
     expect(() => encode({ post: { publishedAt: new Date("not-a-date") } })).toThrow(
       new TypeError('Invalid Date at path "post.publishedAt"'),
@@ -422,6 +440,15 @@ describe("encode/decode round-trip", () => {
 
   test("decode rejects array indexes that would create sparse arrays", () => {
     expect(() => decode([["a[100000000]", "x"]])).toThrow("Array index too large");
+  });
+
+  test("decode rejects malformed path syntax", () => {
+    expect(() => decode([["items[0", "x"]])).toThrow(
+      'Invalid path "items[0": missing closing bracket',
+    );
+    expect(() => decode([["name\\", "x"]])).toThrow(
+      'Invalid path "name\\": trailing escape character',
+    );
   });
 
   test("object with numeric string keys", () => {
@@ -555,6 +582,16 @@ describe("encode/decode round-trip", () => {
         ["$types", "not json"],
       ]),
     ).toThrow("malformed JSON");
+  });
+
+  test("decode throws on duplicate $types metadata", () => {
+    expect(() =>
+      decode([
+        ["count", "42"],
+        ["$types", JSON.stringify({ count: "number" })],
+        ["$types", JSON.stringify({ count: "bigint" })],
+      ]),
+    ).toThrow('Invalid superformdata metadata: duplicate "$types" field');
   });
 
   test("decode throws on non-object $types metadata", () => {

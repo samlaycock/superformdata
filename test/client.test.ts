@@ -580,6 +580,15 @@ describe("encode(FormData)", () => {
     expect(types.val).toBe("number");
   });
 
+  test("throws on duplicate existing $types entries", () => {
+    const fd = new FormData();
+    fd.append("count", "42");
+    fd.append("$types", JSON.stringify({ count: "number" }));
+    fd.append("$types", JSON.stringify({ count: "bigint" }));
+
+    expect(() => encode(fd)).toThrow('Invalid superformdata metadata: duplicate "$types" field');
+  });
+
   test("FormData without types returns plain entries", () => {
     const fd = new FormData();
     fd.append("name", "Alice");

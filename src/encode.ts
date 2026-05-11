@@ -1,4 +1,4 @@
-import { validateKnownTypeIds } from "./metadata.ts";
+import { validateKnownTypeIds, validateTypesMetadata } from "./metadata.ts";
 import { MAX_SPARSE_ARRAY_LENGTH, appendIndex, appendKey } from "./path.ts";
 import { createTypeRegistry, findHandler, type TypeHandlerList } from "./types.ts";
 
@@ -222,11 +222,17 @@ function encodeStringEntries(
       continue;
     }
     if (key === typesKey) {
+      if (existingTypes !== undefined) {
+        throw new TypeError(`Invalid superformdata metadata: duplicate "${typesKey}" field`);
+      }
       try {
         existingTypes = JSON.parse(value);
       } catch {
-        // Malformed $types — ignore and treat entries as strings
+        throw new TypeError(
+          `Invalid superformdata metadata: "${typesKey}" field contains malformed JSON`,
+        );
       }
+      validateTypesMetadata(existingTypes, typesKey);
       continue;
     }
     entries.push([key, value]);

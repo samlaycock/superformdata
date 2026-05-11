@@ -132,10 +132,7 @@ export function parsePath(path: string): PathSegment[] {
         hasCurrentSegment = true;
         i += 2;
       } else {
-        // Trailing backslash — treat as literal
-        current += "\\";
-        hasCurrentSegment = true;
-        i++;
+        throw new TypeError(`Invalid path "${path}": trailing escape character`);
       }
     } else if (path[i] === ".") {
       segments.push(current);
@@ -150,10 +147,7 @@ export function parsePath(path: string): PathSegment[] {
       }
       const close = path.indexOf("]", i);
       if (close === -1) {
-        // Malformed bracket — treat rest as literal
-        current += path.slice(i);
-        hasCurrentSegment = true;
-        break;
+        throw new TypeError(`Invalid path "${path}": missing closing bracket`);
       }
       segments.push(parseArrayIndex(path.slice(i + 1, close), path));
       i = close + 1;

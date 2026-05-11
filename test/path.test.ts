@@ -114,12 +114,16 @@ describe("parsePath", () => {
     expect(parsePath("a.b[0].c[1].d")).toEqual(["a", "b", 0, "c", 1, "d"]);
   });
 
-  test("trailing backslash", () => {
-    expect(parsePath("key\\")).toEqual(["key\\"]);
+  test("rejects trailing backslash", () => {
+    expect(() => parsePath("key\\")).toThrow(
+      new TypeError('Invalid path "key\\": trailing escape character'),
+    );
   });
 
-  test("missing closing bracket", () => {
-    expect(parsePath("items[0")).toEqual(["items", "[0"]);
+  test("rejects missing closing bracket", () => {
+    expect(() => parsePath("items[0")).toThrow(
+      new TypeError('Invalid path "items[0": missing closing bracket'),
+    );
   });
 
   test("empty string key (a..b)", () => {
