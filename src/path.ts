@@ -93,6 +93,14 @@ function assertCompatibleContainer(
   }
 }
 
+function assertCompatibleRoot(root: PathContainer, firstSegment: PathSegment, path: string): void {
+  if (Array.isArray(root) === (typeof firstSegment === "number")) return;
+
+  throw new TypeError(
+    `Path collision at root while decoding path "${path}": incompatible container type`,
+  );
+}
+
 function parseArrayIndex(raw: string, path: string): number {
   if (!ARRAY_INDEX_PATTERN.test(raw)) {
     throw new TypeError(`Invalid array index "${raw}" in path "${path}"`);
@@ -177,6 +185,7 @@ export function unflattenParsed(entries: readonly ParsedPathEntry[]): unknown {
     }
 
     let current: PathContainer = root;
+    assertCompatibleRoot(root, segments[0]!, path);
 
     for (let i = 0; i < segments.length - 1; i++) {
       const seg = segments[i]!;
