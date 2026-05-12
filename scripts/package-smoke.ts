@@ -64,14 +64,15 @@ async function smokeSubpathTypes(): Promise<void> {
   const tempDir = workspace.trim();
   const packageDir = import.meta.dir + "/..";
 
-  await Bun.$`mkdir -p ${tempDir}/node_modules`;
-  await Bun.$`ln -s ${packageDir} ${tempDir}/node_modules/${packageJson.name}`;
+  try {
+    await Bun.$`mkdir -p ${tempDir}/node_modules`;
+    await Bun.$`ln -s ${packageDir} ${tempDir}/node_modules/${packageJson.name}`;
 
-  await Bun.write(
-    `${tempDir}/index.ts`,
-    `
-import { decode, encode, type TypeHandler } from "superformdata/core";
-import { createChangeHandlers, type ChangeHandlers } from "superformdata/client";
+    await Bun.write(
+      `${tempDir}/index.ts`,
+      `
+import { decode, encode, type TypeHandler } from "${packageJson.name}/core";
+import { createChangeHandlers, type ChangeHandlers } from "${packageJson.name}/client";
 
 const entries = encode({ count: 1 });
 const decoded = decode<{ readonly count: number }>(entries);
@@ -87,33 +88,36 @@ void decoded;
 void handlers;
 void typeHandler;
 `,
-  );
-  await Bun.write(
-    `${tempDir}/tsconfig.json`,
-    JSON.stringify(
-      {
-        compilerOptions: {
-          lib: ["esnext", "dom", "dom.iterable"],
-          module: "esnext",
-          moduleResolution: "node",
-          noEmit: true,
-          strict: true,
-          target: "esnext",
+    );
+    await Bun.write(
+      `${tempDir}/tsconfig.json`,
+      JSON.stringify(
+        {
+          compilerOptions: {
+            lib: ["esnext", "dom", "dom.iterable"],
+            module: "esnext",
+            moduleResolution: "node",
+            noEmit: true,
+            strict: true,
+            target: "esnext",
+          },
+          files: ["index.ts"],
         },
-        files: ["index.ts"],
-      },
-      null,
-      2,
-    ),
-  );
+        null,
+        2,
+      ),
+    );
 
-  const typecheck = Bun.spawnSync(["bun", "x", "tsc", "--project", tempDir], {
-    cwd: import.meta.dir + "/..",
-    stdout: "pipe",
-    stderr: "pipe",
-  });
+    const typecheck = Bun.spawnSync(["bun", "x", "tsc", "--project", tempDir], {
+      cwd: import.meta.dir + "/..",
+      stdout: "pipe",
+      stderr: "pipe",
+    });
 
-  assert(typecheck.exitCode === 0, outputOf(typecheck));
+    assert(typecheck.exitCode === 0, outputOf(typecheck));
+  } finally {
+    await Bun.$`rm -rf ${tempDir}`;
+  }
 }
 
 await smokeRuntimeEntrypoints();
