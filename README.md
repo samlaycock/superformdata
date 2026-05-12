@@ -314,6 +314,24 @@ decodeRequest<T = unknown>(request: Request, options?: { typesKey?: string; type
 onChange(typeId: string, options?: { typesKey?: string }): (event: Event) => void
 ```
 
+## Benchmarks
+
+Run the manual benchmark suite with Bun:
+
+```bash
+bun run bench
+```
+
+The benchmark covers representative large payloads for encode and decode performance:
+
+- Large flat objects
+- Deeply nested objects
+- Repeated fields using `URLSearchParams` as FormData-like input
+- Arrays, sparse arrays, `Set`, and `Map`
+- Typed payloads with `Date`, number, boolean, `bigint`, `URL`, `RegExp`, and `Error` values
+
+Benchmarks are intentionally not part of `bun run check`; use the reported `ms/op`, `ops/sec`, and encoded entry counts as local baseline output when comparing performance work.
+
 ## License
 
 MIT
