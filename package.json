@@ -51,6 +51,7 @@
     "fmt": "oxfmt .",
     "fmt:check": "oxfmt . --check",
     "test": "bun test",
+    "bench": "bun scripts/bench.ts",
     "typecheck": "tsc --noEmit",
     "build": "tsdown",
     "smoke:package": "bun scripts/package-smoke.ts",
