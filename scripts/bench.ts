@@ -91,7 +91,10 @@ const benchmarkCases: readonly BenchmarkCase[] = [
         ...Array.from({ length: 100 }, (_, index) => index),
       ],
       booleans: Array.from({ length: 100 }, (_, index) => index % 2 === 0),
-      bigints: Array.from({ length: 100 }, (_, index) => BigInt(Number.MAX_SAFE_INTEGER + index)),
+      bigints: Array.from(
+        { length: 100 },
+        (_, index) => BigInt(Number.MAX_SAFE_INTEGER) + BigInt(index),
+      ),
       urls: Array.from({ length: 100 }, (_, index) => new URL(`https://example.com/${index}`)),
       patterns: Array.from({ length: 100 }, (_, index) => new RegExp(`item-${index}`, "gi")),
       errors: Array.from({ length: 100 }, (_, index) => new Error(`Failure ${index}`)),
