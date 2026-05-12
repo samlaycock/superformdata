@@ -53,7 +53,8 @@
     "test": "bun test",
     "typecheck": "tsc --noEmit",
     "build": "tsdown",
-    "check": "bun run fmt:check && bun run lint && bun run typecheck && bun test && bun run build",
+    "smoke:package": "bun scripts/package-smoke.ts",
+    "check": "bun run fmt:check && bun run lint && bun run typecheck && bun test && bun run build && bun run smoke:package",
     "prepublishOnly": "bun run check",
     "ci:publish": "bun run check && changeset publish"
   },
