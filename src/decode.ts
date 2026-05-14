@@ -66,7 +66,7 @@ export function decode<T = unknown>(
   }
 
   let types: Record<string, string> = {};
-  if (typesJson) {
+  if (typesJson !== undefined) {
     try {
       types = JSON.parse(typesJson);
     } catch {
