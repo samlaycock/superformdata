@@ -151,7 +151,9 @@ export function parsePath(path: string): PathSegment[] {
       }
       segments.push(parseArrayIndex(path.slice(i + 1, close), path));
       i = close + 1;
-      // skip trailing dot after bracket (e.g., `[0].name`)
+      if (i < path.length && path[i] !== "." && path[i] !== "[") {
+        throw new TypeError(`Invalid path "${path}": expected ".", "[", or end after array index`);
+      }
       if (path[i] === ".") i++;
     } else {
       current += path[i];
