@@ -98,6 +98,16 @@ describe("parsePath", () => {
     expect(parsePath("items[0].name")).toEqual(["items", 0, "name"]);
   });
 
+  test("rejects ambiguous key text after bracket index", () => {
+    expect(() => parsePath("items[0]name")).toThrow('Invalid path "items[0]name"');
+    expect(() => parsePath("[0]name")).toThrow('Invalid path "[0]name"');
+  });
+
+  test("allows explicit path separators after bracket index", () => {
+    expect(parsePath("items[0][1]")).toEqual(["items", 0, 1]);
+    expect(parsePath("[0].name")).toEqual([0, "name"]);
+  });
+
   test("nested brackets", () => {
     expect(parsePath("[0][1]")).toEqual([0, 1]);
   });
