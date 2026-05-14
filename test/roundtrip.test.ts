@@ -584,6 +584,19 @@ describe("encode/decode round-trip", () => {
     ).toThrow("malformed JSON");
   });
 
+  test("decode throws on empty $types metadata", () => {
+    expect(() => decode([["$types", ""]])).toThrow("malformed JSON");
+  });
+
+  test("decode throws on empty $types metadata alongside normal fields", () => {
+    expect(() =>
+      decode([
+        ["name", "Alice"],
+        ["$types", ""],
+      ]),
+    ).toThrow("malformed JSON");
+  });
+
   test("decode throws on duplicate $types metadata", () => {
     expect(() =>
       decode([
