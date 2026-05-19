@@ -265,6 +265,14 @@ function isFileValue(value: unknown): value is File {
   return typeof File !== "undefined" && value instanceof File;
 }
 
+function assertDataPathNotReserved(path: string, typesKey: string): void {
+  if (path !== typesKey) return;
+
+  throw new TypeError(
+    `Path "${path}" is reserved for superformdata metadata; pass a different typesKey option or rename the root field.`,
+  );
+}
+
 function walk(
   value: unknown,
   path: string,
@@ -275,14 +283,13 @@ function walk(
   fileStrategy: FileStrategy,
   typesKey: string,
 ): void {
+  assertDataPathNotReserved(path, typesKey);
+
   if (isFileValue(value)) {
     if (fileStrategy !== "preserve") {
       throw new TypeError(
         `File values are not supported by superformdata at path "${path}". Handle file uploads separately or pass { files: "preserve" }.`,
       );
-    }
-    if (path === typesKey) {
-      throw new TypeError(`Invalid superformdata metadata: "${typesKey}" field must be a string`);
     }
     entries.push([path, value]);
     return;

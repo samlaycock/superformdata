@@ -560,7 +560,19 @@ describe("encode/decode round-trip", () => {
     const file = new File(["content"], "metadata.txt");
 
     expect(() => encode({ $types: file }, { files: "preserve" })).toThrow(
-      'Invalid superformdata metadata: "$types" field must be a string',
+      'Path "$types" is reserved for superformdata metadata',
+    );
+  });
+
+  test("encode rejects root string data fields that use the metadata key", () => {
+    expect(() => encode({ $types: "user data" })).toThrow(
+      'Path "$types" is reserved for superformdata metadata; pass a different typesKey option or rename the root field.',
+    );
+  });
+
+  test("encode rejects root typed data fields that use the metadata key", () => {
+    expect(() => encode({ $types: 1 })).toThrow(
+      'Path "$types" is reserved for superformdata metadata; pass a different typesKey option or rename the root field.',
     );
   });
 
