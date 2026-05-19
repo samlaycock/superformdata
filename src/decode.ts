@@ -145,9 +145,12 @@ export function decode<T = unknown>(
 
   for (const [path, segments, length] of sortedSparseArrays) {
     if (path === "") {
-      if (Array.isArray(result)) result.length = length;
+      if (Array.isArray(result)) {
+        validateSparseArrayLength(path, result, length);
+        result.length = length;
+      }
     } else {
-      resizeArray(result, segments, length);
+      resizeArray(result, path, segments, length);
     }
   }
 
@@ -278,7 +281,12 @@ function isConvertedStructuralValue(value: unknown, typeId: string): boolean {
   return (typeId === "set" && value instanceof Set) || (typeId === "map" && value instanceof Map);
 }
 
-function resizeArray(root: unknown, segments: readonly PathSegment[], length: number): void {
+function resizeArray(
+  root: unknown,
+  path: string,
+  segments: readonly PathSegment[],
+  length: number,
+): void {
   if (segments.length === 0) return;
 
   let current: Record<string | number, unknown> = root as Record<string | number, unknown>;
@@ -289,5 +297,19 @@ function resizeArray(root: unknown, segments: readonly PathSegment[], length: nu
 
   const lastSeg = segments[segments.length - 1]!;
   const value = current[lastSeg];
-  if (Array.isArray(value)) value.length = length;
+  if (!Array.isArray(value)) return;
+
+  validateSparseArrayLength(path, value, length);
+  value.length = length;
+}
+
+function validateSparseArrayLength(path: string, value: readonly unknown[], length: number): void {
+  for (const key of Object.keys(value)) {
+    const index = Number(key);
+    if (!Number.isInteger(index) || index < length) continue;
+
+    throw new TypeError(
+      `Invalid superformdata metadata: sparse array length ${length} at path "${path}" would truncate decoded index ${index}`,
+    );
+  }
 }

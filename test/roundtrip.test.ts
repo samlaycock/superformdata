@@ -442,6 +442,28 @@ describe("encode/decode round-trip", () => {
     expect(() => decode([["a[100000000]", "x"]])).toThrow("Array index too large");
   });
 
+  test("decode rejects sparse array metadata shorter than decoded indexes", () => {
+    expect(() =>
+      decode([
+        ["items[5]", "x"],
+        ["$types", JSON.stringify({ items: "array:2" })],
+      ]),
+    ).toThrow(
+      'Invalid superformdata metadata: sparse array length 2 at path "items" would truncate decoded index 5',
+    );
+  });
+
+  test("decode rejects large sparse array metadata shorter than decoded indexes", () => {
+    expect(() =>
+      decode([
+        ["items[100000]", "x"],
+        ["$types", JSON.stringify({ items: "array:100000" })],
+      ]),
+    ).toThrow(
+      'Invalid superformdata metadata: sparse array length 100000 at path "items" would truncate decoded index 100000',
+    );
+  });
+
   test("decode rejects malformed path syntax", () => {
     expect(() => decode([["items[0", "x"]])).toThrow(
       'Invalid path "items[0": missing closing bracket',
