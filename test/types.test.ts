@@ -20,6 +20,13 @@ type _EncodePreserveFilesReturnIncludesFiles = Assert<
   Equal<typeof encodedWithFiles, [string, string | File | Blob][]>
 >;
 
+const blobEntries = encode({ attachment: new Blob(["content"]) }, { files: "preserve" });
+const decodedBlobEntries = decode<{ attachment: Blob }>(blobEntries, { files: "preserve" });
+
+type _DecodeAcceptsEncodeOutputWithBlobEntries = Assert<
+  Equal<typeof decodedBlobEntries, { attachment: Blob }>
+>;
+
 const decoded = decode<{
   createdAt: Date;
   active: boolean;

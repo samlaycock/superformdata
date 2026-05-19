@@ -313,7 +313,7 @@ document.querySelector('input[name="homepage"]')?.addEventListener("change", onU
 ```ts
 encode<T>(input: T, options?: { typesKey?: string; types?: Record<string, string>; typeHandlers?: readonly TypeHandler[]; files?: "throw" | "preserve" }): [string, string][]
 encode<T>(input: T, options: { files: "preserve"; typesKey?: string; types?: Record<string, string>; typeHandlers?: readonly TypeHandler[] }): [string, string | File | Blob][]
-decode<T = unknown>(data: FormData | Iterable<[string, FormDataEntryValue]>, options?: { typesKey?: string; typeHandlers?: readonly TypeHandler[]; files?: "throw" | "preserve" }): T
+decode<T = unknown>(data: FormData | Iterable<[string, FormDataEntryValue | Blob]>, options?: { typesKey?: string; typeHandlers?: readonly TypeHandler[]; files?: "throw" | "preserve" }): T
 decodeRequest<T = unknown>(request: Request, options?: { typesKey?: string; typeHandlers?: readonly TypeHandler[]; files?: "throw" | "preserve" }): Promise<T>
 onChange(typeId: string, options?: { typesKey?: string }): (event: Event) => void
 ```

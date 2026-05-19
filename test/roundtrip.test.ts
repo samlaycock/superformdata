@@ -578,6 +578,14 @@ describe("encode/decode round-trip", () => {
     );
   });
 
+  test("encode throws when a preserved plain object Blob value uses the metadata key", () => {
+    const blob = new Blob(["content"], { type: "text/plain" });
+
+    expect(() => encode({ $types: blob }, { files: "preserve" })).toThrow(
+      'Path "$types" is reserved for superformdata metadata',
+    );
+  });
+
   test("encode rejects root string data fields that use the metadata key", () => {
     expect(() => encode({ $types: "user data" })).toThrow(
       'Path "$types" is reserved for superformdata metadata; pass a different typesKey option or rename the root field.',

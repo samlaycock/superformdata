@@ -31,8 +31,11 @@ export interface DecodeOptions {
   files?: "throw" | "preserve";
 }
 
+export type DecodableEntryValue = FormDataEntryValue | Blob;
+export type DecodableEntry = [string, DecodableEntryValue];
+
 export function decode<T = unknown>(
-  data: FormData | Iterable<[string, FormDataEntryValue]>,
+  data: FormData | Iterable<DecodableEntry>,
   options?: DecodeOptions,
 ): T {
   const typesKey = options?.typesKey ?? DEFAULT_TYPES_KEY;
