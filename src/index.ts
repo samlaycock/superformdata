@@ -2,6 +2,8 @@ export {
   decode,
   decodeRequest,
   encode,
+  type DecodableEntry,
+  type DecodableEntryValue,
   type DecodeOptions,
   type EncodedEntry,
   type EncodeOptions,
