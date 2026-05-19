@@ -213,15 +213,17 @@ export async function decodeRequest<T = unknown>(
   options?: DecodeOptions,
 ): Promise<T> {
   const contentType = request.headers.get("content-type") ?? "";
+  const mediaType = contentType.split(";", 1)[0]!.trim().toLowerCase();
 
-  if (
-    contentType.includes("multipart/form-data") ||
-    contentType.includes("application/x-www-form-urlencoded")
-  ) {
+  if (mediaType === "multipart/form-data") {
     return decode<T>(await request.formData(), options);
   }
 
-  if (contentType.includes("text/plain")) {
+  if (mediaType === "application/x-www-form-urlencoded") {
+    return decode<T>(new URLSearchParams(await request.text()), options);
+  }
+
+  if (mediaType === "text/plain") {
     const text = await request.text();
     const entries: [string, string][] = text
       .split(/\r?\n/)
