@@ -17,7 +17,7 @@ type _EncodeReturnIsStable = Assert<Equal<typeof encoded, [string, string][]>>;
 const encodedWithFiles = encode(new FormData(), { files: "preserve" });
 
 type _EncodePreserveFilesReturnIncludesFiles = Assert<
-  Equal<typeof encodedWithFiles, [string, string | File][]>
+  Equal<typeof encodedWithFiles, [string, string | File | Blob][]>
 >;
 
 const decoded = decode<{

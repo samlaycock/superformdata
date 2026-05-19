@@ -5,7 +5,7 @@ import { createTypeRegistry, findHandler, type TypeHandlerList } from "./types.t
 export const DEFAULT_TYPES_KEY = "$types";
 
 export type EncodedEntry = [string, string];
-export type PreservedFileEntry = [string, string | File];
+export type PreservedFileEntry = [string, string | File | Blob];
 export type FileStrategy = "throw" | "preserve";
 
 export interface EncodeOptions {
@@ -199,7 +199,7 @@ function encodeForm(
 }
 
 function encodeStringEntries(
-  data: Iterable<[string, string | File]>,
+  data: Iterable<[string, string | File | Blob]>,
   typesKey: string,
   registry: ReturnType<typeof createTypeRegistry>,
   fileStrategy: FileStrategy,
@@ -261,8 +261,11 @@ function trackRef(value: unknown, path: string, seen: Set<unknown>): void {
   seen.add(value);
 }
 
-function isFileValue(value: unknown): value is File {
-  return typeof File !== "undefined" && value instanceof File;
+function isFileValue(value: unknown): value is File | Blob {
+  return (
+    (typeof File !== "undefined" && value instanceof File) ||
+    (typeof Blob !== "undefined" && value instanceof Blob)
+  );
 }
 
 function assertDataPathNotReserved(path: string, typesKey: string): void {
@@ -288,7 +291,7 @@ function walk(
   if (isFileValue(value)) {
     if (fileStrategy !== "preserve") {
       throw new TypeError(
-        `File values are not supported by superformdata at path "${path}". Handle file uploads separately or pass { files: "preserve" }.`,
+        `File and Blob values are not supported by superformdata at path "${path}". Handle file uploads separately or pass { files: "preserve" }.`,
       );
     }
     entries.push([path, value]);
