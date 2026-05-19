@@ -837,6 +837,51 @@ describe("decodeRequest", () => {
     expect(await decodeRequest<typeof input>(request)).toEqual(input);
   });
 
+  test("application/x-www-form-urlencoded with parameters", async () => {
+    const input = { name: "Alice", age: 30 };
+    const entries = encode(input);
+    const body = entries
+      .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+      .join("&");
+
+    const request = new Request("http://localhost", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded; charset=UTF-8" },
+      body,
+    });
+
+    expect(await decodeRequest<typeof input>(request)).toEqual(input);
+  });
+
+  test("accepts supported content-types case-insensitively", async () => {
+    const input = { name: "Alice" };
+    const entries = encode(input);
+    const formBody = entries
+      .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+      .join("&");
+    const textBody = entries.map(([k, v]) => `${k}=${v}`).join("\n");
+
+    await expect(
+      decodeRequest<typeof input>(
+        new Request("http://localhost", {
+          method: "POST",
+          headers: { "content-type": "Application/X-WWW-Form-Urlencoded" },
+          body: formBody,
+        }),
+      ),
+    ).resolves.toEqual(input);
+
+    await expect(
+      decodeRequest<typeof input>(
+        new Request("http://localhost", {
+          method: "POST",
+          headers: { "content-type": "Text/Plain" },
+          body: textBody,
+        }),
+      ),
+    ).resolves.toEqual(input);
+  });
+
   test("multipart/form-data", async () => {
     const input = { name: "Alice", active: true };
     const entries = encode(input);
@@ -901,6 +946,25 @@ describe("decodeRequest", () => {
     });
 
     await expect(decodeRequest(request)).rejects.toThrow(/Unsupported content-type/);
+  });
+
+  test("rejects content-types that only contain supported type substrings", async () => {
+    const requests = [
+      new Request("http://localhost", {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencodedx" },
+        body: "name=Alice",
+      }),
+      new Request("http://localhost", {
+        method: "POST",
+        headers: { "content-type": "not-text/plain" },
+        body: "name=Alice",
+      }),
+    ];
+
+    for (const request of requests) {
+      await expect(decodeRequest(request)).rejects.toThrow(/Unsupported content-type/);
+    }
   });
 
   test("text/plain with \\n line endings", async () => {
