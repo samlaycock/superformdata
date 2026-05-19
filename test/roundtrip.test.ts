@@ -548,11 +548,25 @@ describe("encode/decode round-trip", () => {
     expect(encode({ attachment: file }, { files: "preserve" })).toEqual([["attachment", file]]);
   });
 
-  test("encode throws a file-specific error for plain object File values by default", () => {
+  test('encode preserves Blob values in plain objects when files option is "preserve"', () => {
+    const blob = new Blob(["content"], { type: "text/plain" });
+
+    expect(encode({ attachment: blob }, { files: "preserve" })).toEqual([["attachment", blob]]);
+  });
+
+  test("encode throws a binary-specific error for plain object File values by default", () => {
     const file = new File(["content"], "test.txt");
 
     expect(() => encode({ attachment: file })).toThrow(
-      'File values are not supported by superformdata at path "attachment"',
+      'File and Blob values are not supported by superformdata at path "attachment"',
+    );
+  });
+
+  test("encode throws a binary-specific error for plain object Blob values by default", () => {
+    const blob = new Blob(["content"], { type: "text/plain" });
+
+    expect(() => encode({ attachment: blob })).toThrow(
+      'File and Blob values are not supported by superformdata at path "attachment"',
     );
   });
 
