@@ -64,6 +64,10 @@ console.log(entries);
 // ]
 ```
 
+`encode()` reserves the root path named by `typesKey` for metadata. With the default
+configuration, a root object field named `$types` throws a path-aware `TypeError`;
+rename that field or pass a different `typesKey` if you need to encode it as user data.
+
 ## `decode()`
 
 Decode `FormData` entries back into a typed value.
