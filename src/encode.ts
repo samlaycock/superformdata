@@ -83,6 +83,27 @@ function isSubmitButton(el: Element): boolean {
   return false;
 }
 
+function validateSubmitter(form: HTMLFormElement, submitter?: HTMLElement | null): void {
+  if (submitter == null) return;
+
+  if (!isSubmitButton(submitter)) {
+    throw new TypeError("The specified element is not a submit button");
+  }
+
+  if (submitter instanceof HTMLButtonElement || submitter instanceof HTMLInputElement) {
+    if (submitter.form === form) return;
+  }
+
+  if (typeof DOMException !== "undefined") {
+    throw new DOMException(
+      "The specified element is not owned by this form element",
+      "NotFoundError",
+    );
+  }
+
+  throw new Error("The specified element is not owned by this form element");
+}
+
 function isSubmittableFormControl(
   element: Element,
 ): element is HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | HTMLButtonElement {
@@ -117,6 +138,8 @@ function encodeForm(
   explicitTypes?: Record<string, string>,
   submitter?: HTMLElement | null,
 ): EncodedEntry[] | PreservedFileEntry[] {
+  validateSubmitter(form, submitter);
+
   const entries: PreservedFileEntry[] = [];
   const types: Record<string, string> = { ...explicitTypes };
 
