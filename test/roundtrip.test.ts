@@ -859,6 +859,13 @@ describe("decodeRequest", () => {
     const formBody = entries
       .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
       .join("&");
+    const multipartBoundary = "superformdata-test-boundary";
+    const multipartBody = entries
+      .map(
+        ([key, value]) =>
+          `--${multipartBoundary}\r\nContent-Disposition: form-data; name="${key}"\r\n\r\n${value}\r\n`,
+      )
+      .join("");
     const textBody = entries.map(([k, v]) => `${k}=${v}`).join("\n");
 
     await expect(
@@ -867,6 +874,16 @@ describe("decodeRequest", () => {
           method: "POST",
           headers: { "content-type": "Application/X-WWW-Form-Urlencoded" },
           body: formBody,
+        }),
+      ),
+    ).resolves.toEqual(input);
+
+    await expect(
+      decodeRequest<typeof input>(
+        new Request("http://localhost", {
+          method: "POST",
+          headers: { "content-type": `Multipart/Form-Data; boundary=${multipartBoundary}` },
+          body: `${multipartBody}--${multipartBoundary}--\r\n`,
         }),
       ),
     ).resolves.toEqual(input);

@@ -216,7 +216,7 @@ export async function decodeRequest<T = unknown>(
   const mediaType = contentType.split(";", 1)[0]!.trim().toLowerCase();
 
   if (mediaType === "multipart/form-data") {
-    return decode<T>(await request.formData(), options);
+    return decode<T>(await withNormalizedContentType(request, mediaType).formData(), options);
   }
 
   if (mediaType === "application/x-www-form-urlencoded") {
@@ -239,6 +239,15 @@ export async function decodeRequest<T = unknown>(
   throw new TypeError(
     `Unsupported content-type: "${contentType}". decodeRequest() only supports multipart/form-data, application/x-www-form-urlencoded, and text/plain.`,
   );
+}
+
+function withNormalizedContentType(request: Request, mediaType: string): Request {
+  const headers = new Headers(request.headers);
+  const contentType = headers.get("content-type");
+  const parameters = contentType?.split(";").slice(1).join(";") ?? "";
+  headers.set("content-type", parameters ? `${mediaType};${parameters}` : mediaType);
+
+  return new Request(request, { headers });
 }
 
 function throwStructuralMismatch(path: string, typeId: string): never {
