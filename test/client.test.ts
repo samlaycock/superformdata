@@ -453,18 +453,38 @@ describe("encode(form)", () => {
     const button = form.querySelector<HTMLButtonElement>("button")!;
     const entries = encode(form, { submitter: button });
 
-    expect(entries).toContainEqual(["title", "hello"]);
-    expect(entries).toContainEqual(["action", "save"]);
+    expect(entries).toEqual([
+      ["title", "hello"],
+      ["action", "save"],
+    ]);
   });
 
-  test("always excludes button[type=button]", () => {
+  test("rejects button[type=button] passed as submitter", () => {
     const form = createForm(
       '<input name="title" value="hello" /><button name="action" type="button" value="click">Click</button>',
     );
     const button = form.querySelector<HTMLButtonElement>("button")!;
-    const entries = encode(form, { submitter: button });
 
-    expect(entries).toEqual([["title", "hello"]]);
+    expect(() => encode(form, { submitter: button })).toThrow(TypeError);
+  });
+
+  test("rejects non-submit input passed as submitter", () => {
+    const form = createForm(
+      '<input name="title" value="hello" /><input name="notSubmit" value="x" />',
+    );
+    const input = form.querySelector<HTMLInputElement>('input[name="notSubmit"]')!;
+
+    expect(() => encode(form, { submitter: input })).toThrow(TypeError);
+  });
+
+  test("rejects submit buttons not owned by the form", () => {
+    document.body.innerHTML =
+      '<form id="target"><input name="title" value="hello" /></form>' +
+      '<form id="other"><button name="action" value="save">Save</button></form>';
+    const form = document.querySelector<HTMLFormElement>("#target")!;
+    const button = document.querySelector<HTMLButtonElement>("#other button")!;
+
+    expect(() => encode(form, { submitter: button })).toThrow();
   });
 
   test("excludes input[type=submit] without submitter", () => {
@@ -483,8 +503,10 @@ describe("encode(form)", () => {
     const submitInput = form.querySelector<HTMLInputElement>('input[type="submit"]')!;
     const entries = encode(form, { submitter: submitInput });
 
-    expect(entries).toContainEqual(["title", "hello"]);
-    expect(entries).toContainEqual(["sub", "Send"]);
+    expect(entries).toEqual([
+      ["title", "hello"],
+      ["sub", "Send"],
+    ]);
   });
 
   test("includes input[type=image] when passed as submitter (encodes name+value, not coordinates)", () => {
