@@ -484,7 +484,13 @@ describe("encode(form)", () => {
     const form = document.querySelector<HTMLFormElement>("#target")!;
     const button = document.querySelector<HTMLButtonElement>("#other button")!;
 
-    expect(() => encode(form, { submitter: button })).toThrow();
+    try {
+      encode(form, { submitter: button });
+      throw new Error("Expected encode to reject submitter owned by another form");
+    } catch (error) {
+      expect(error).toBeInstanceOf(DOMException);
+      expect((error as DOMException).name).toBe("NotFoundError");
+    }
   });
 
   test("excludes input[type=submit] without submitter", () => {
