@@ -1,6 +1,6 @@
 {
   "name": "superformdata",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Serialize rich JavaScript values into form-style entries and decode them back again",
   "homepage": "https://github.com/samlaycock/superformdata#readme",
   "bugs": {

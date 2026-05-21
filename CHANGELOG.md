@@ -1,5 +1,16 @@
 # superformdata
 
+## 0.2.1
+
+### Patch Changes
+
+- 6ad5e8b: Preserve plain object Blob values when encoding with `files: "preserve"`.
+- 1a4dc4c: Reject plain-value root fields that collide with the reserved metadata key.
+- 558c5f0: Reject ambiguous key text immediately after bracketed array indexes.
+- 1bfd999: Normalize and strictly match decodeRequest content types before decoding request bodies.
+- e10484c: Validate `encode(form, { submitter })` submitters before encoding so non-submit controls and controls owned by another form throw like native `FormData(form, submitter)`.
+- e8feebd: Reject sparse array metadata that would truncate decoded values.
+
 ## 0.2.0
 
 ### Minor Changes
