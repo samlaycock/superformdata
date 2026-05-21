@@ -9,6 +9,7 @@ import {
   appendIndex,
   appendKey,
   parsePath,
+  parsePathEntry,
   unflattenParsed,
   type ParsedPathEntry,
   type PathSegment,
@@ -17,7 +18,6 @@ import { createTypeRegistry, getHandler, type TypeHandlerList } from "./types.ts
 
 interface StructuralPath {
   readonly path: string;
-  readonly segments: readonly PathSegment[];
   readonly typeId: string;
 }
 
@@ -55,7 +55,7 @@ export function decode<T = unknown>(
       if (key === typesKey) {
         throw new TypeError(`Invalid superformdata metadata: "${typesKey}" field must be a string`);
       }
-      preservedRaw.push({ path: key, segments: parsePath(key), value });
+      preservedRaw.push(parsePathEntry(key, value));
       continue;
     }
     if (key === typesKey) {
@@ -85,40 +85,45 @@ export function decode<T = unknown>(
   const structuralPaths: StructuralPath[] = [];
   for (const [path, typeId] of Object.entries(types)) {
     if (isStructuralType(typeId)) {
-      structuralPaths.push({ path, segments: parsePath(path), typeId });
+      structuralPaths.push({ path, typeId });
     }
   }
 
   // Deserialize leaf values
   const deserialized: ParsedPathEntry[] = [...preservedRaw];
+  const parentPaths = new Set<string>();
+  const parentPathCache = new Map<string, Map<PathSegment, string>>();
+  for (const entry of preservedRaw) addParentPaths(parentPaths, parentPathCache, entry);
+
   for (const [path, value] of raw) {
     const typeId = types[path];
-    const segments = parsePath(path);
+    const parsed = parsePathEntry(path, value);
+    addParentPaths(parentPaths, parentPathCache, parsed);
     if (typeId && !isStructuralType(typeId)) {
       const handler = getHandler(typeId, registry)!;
       try {
-        deserialized.push({ path, segments, value: handler.deserialize(value) });
+        deserialized.push({ ...parsed, value: handler.deserialize(value) });
       } catch (error) {
         const reason = error instanceof Error ? error.message : `could not deserialize ${typeId}`;
         throw new TypeError(`Invalid value for typed field "${path}": ${reason}`);
       }
       continue;
     }
-    deserialized.push({ path, segments, value });
+    deserialized.push(parsed);
   }
 
   // Build lookup sets once so empty-container reconstruction does not scan
   // all decoded entries for every structural metadata path.
   const entryPaths = new Set<string>();
   for (const entry of deserialized) entryPaths.add(entry.path);
-  const parentPaths = buildParentPathSet(deserialized);
 
   // Add empty container markers
-  for (const { path, segments, typeId } of structuralPaths) {
+  for (const { path, typeId } of structuralPaths) {
     if (entryPaths.has(path)) continue;
     if (parentPaths.has(path)) continue;
 
     const sparseArrayLength = parseSparseArrayTypeId(typeId);
+    const segments = parsePath(path);
 
     if (typeId === "set") {
       deserialized.push({ path, segments, value: new Set() });
@@ -139,21 +144,21 @@ export function decode<T = unknown>(
   let result = unflattenParsed(deserialized);
 
   const sortedSparseArrays = structuralPaths
-    .map(({ path, segments, typeId }): [string, readonly PathSegment[], number] | undefined => {
+    .map(({ path, typeId }): [string, number] | undefined => {
       const length = parseSparseArrayTypeId(typeId);
-      return length === undefined ? undefined : [path, segments, length];
+      return length === undefined ? undefined : [path, length];
     })
-    .filter((item): item is [string, readonly PathSegment[], number] => item !== undefined)
+    .filter((item): item is [string, number] => item !== undefined)
     .sort((a, b) => b[0].length - a[0].length);
 
-  for (const [path, segments, length] of sortedSparseArrays) {
+  for (const [path, length] of sortedSparseArrays) {
     if (path === "") {
       if (Array.isArray(result)) {
         validateSparseArrayLength(path, result, length);
         result.length = length;
       }
     } else {
-      resizeArray(result, path, segments, length);
+      resizeArray(result, path, parsePath(path), length);
     }
   }
 
@@ -162,7 +167,7 @@ export function decode<T = unknown>(
     .filter(({ typeId }) => typeId === "set" || typeId === "map")
     .sort((a, b) => b.path.length - a.path.length);
 
-  for (const { path, segments, typeId } of sortedStructural) {
+  for (const { path, typeId } of sortedStructural) {
     if (path === "") {
       // Top-level structural type
       if (typeId === "set" && Array.isArray(result)) {
@@ -173,7 +178,7 @@ export function decode<T = unknown>(
         throwStructuralMismatch(path, typeId);
       }
     } else {
-      convertStructural(result, path, segments, typeId);
+      convertStructural(result, path, parsePath(path), typeId);
     }
   }
 
@@ -186,26 +191,36 @@ function createSparseArray(length: number): unknown[] {
   return array;
 }
 
-function buildParentPathSet(entries: readonly ParsedPathEntry[]): Set<string> {
-  const parentPaths = new Set<string>();
+function addParentPaths(
+  parentPaths: Set<string>,
+  parentPathCache: Map<string, Map<PathSegment, string>>,
+  entry: ParsedPathEntry,
+): void {
+  if (entry.segments.length === 0) return;
 
-  for (const { segments } of entries) {
-    if (segments.length === 0) continue;
+  parentPaths.add("");
 
-    parentPaths.add("");
+  let parentPath = "";
+  for (let i = 0; i < entry.segments.length - 1; i++) {
+    const segment = entry.segments[i]!;
+    let childCache = parentPathCache.get(parentPath);
+    if (childCache === undefined) {
+      childCache = new Map();
+      parentPathCache.set(parentPath, childCache);
+    }
 
-    let parentPath = "";
-    for (let i = 0; i < segments.length - 1; i++) {
-      const segment = segments[i]!;
+    const cachedParentPath = childCache.get(segment);
+    if (cachedParentPath === undefined) {
       parentPath =
         typeof segment === "number"
           ? appendIndex(parentPath, segment)
           : appendKey(parentPath, segment);
-      parentPaths.add(parentPath);
+      childCache.set(segment, parentPath);
+    } else {
+      parentPath = cachedParentPath;
     }
+    parentPaths.add(parentPath);
   }
-
-  return parentPaths;
 }
 
 export async function decodeRequest<T = unknown>(
