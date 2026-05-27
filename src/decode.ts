@@ -116,6 +116,7 @@ export function decode<T = unknown>(
   // all decoded entries for every structural metadata path.
   const entryPaths = new Set<string>();
   for (const entry of deserialized) entryPaths.add(entry.path);
+  const parsedSegmentsCache = new Map<string, readonly PathSegment[]>();
 
   // Add empty container markers
   for (const { path, typeId } of structuralPaths) {
@@ -123,7 +124,7 @@ export function decode<T = unknown>(
     if (parentPaths.has(path)) continue;
 
     const sparseArrayLength = parseSparseArrayTypeId(typeId);
-    const segments = parsePath(path);
+    const segments = getParsedSegments(parsedSegmentsCache, path);
 
     if (typeId === "set") {
       deserialized.push({ path, segments, value: new Set() });
@@ -158,7 +159,7 @@ export function decode<T = unknown>(
         result.length = length;
       }
     } else {
-      resizeArray(result, path, parsePath(path), length);
+      resizeArray(result, path, getParsedSegments(parsedSegmentsCache, path), length);
     }
   }
 
@@ -178,7 +179,7 @@ export function decode<T = unknown>(
         throwStructuralMismatch(path, typeId);
       }
     } else {
-      convertStructural(result, path, parsePath(path), typeId);
+      convertStructural(result, path, getParsedSegments(parsedSegmentsCache, path), typeId);
     }
   }
 
@@ -189,6 +190,18 @@ function createSparseArray(length: number): unknown[] {
   const array: unknown[] = [];
   array.length = length;
   return array;
+}
+
+function getParsedSegments(
+  parsedSegmentsCache: Map<string, readonly PathSegment[]>,
+  path: string,
+): readonly PathSegment[] {
+  const cachedSegments = parsedSegmentsCache.get(path);
+  if (cachedSegments !== undefined) return cachedSegments;
+
+  const segments = parsePath(path);
+  parsedSegmentsCache.set(path, segments);
+  return segments;
 }
 
 function addParentPaths(
