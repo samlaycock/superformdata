@@ -166,6 +166,14 @@ export function parsePath(path: string): PathSegment[] {
   return segments;
 }
 
+export function parsePathEntry(path: string, value: unknown): ParsedPathEntry {
+  return {
+    path,
+    segments: parsePath(path),
+    value,
+  };
+}
+
 export function unflattenParsed(entries: readonly ParsedPathEntry[]): unknown {
   if (entries.length === 0) return {};
   if (entries.length === 1 && entries[0]!.path === "") return entries[0]!.value;
